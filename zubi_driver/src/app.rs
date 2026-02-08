@@ -16,9 +16,7 @@ live_design! {
                 }
             }
             
-            <View> {
-                width: Fill,
-                height: Fill,
+            body = {
                 flow: Down,
                 spacing: 10,
                 padding: 20,
@@ -65,15 +63,21 @@ live_design! {
     }
 }
 
-#[derive(Live, LiveHook, Widget)]
+#[derive(Live, LiveHook)]
 pub struct App {
-    #[deref] ui: WidgetRef,
+    #[live] ui: WidgetRef,
     #[rust] driver_profile: DriverProfile,
     #[rust] is_online: bool,
 }
 
-impl WidgetMatchEvent for App {
-    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions, _scope: &mut Scope) {
+impl LiveRegister for App {
+    fn live_register(cx: &mut Cx) {
+        crate::makepad_widgets::live_design(cx);
+    }
+}
+
+impl MatchEvent for App {
+    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
         if self.ui.button(id!(toggle_btn)).clicked(actions) {
             self.is_online = !self.is_online;
             self.update_ui(cx);
@@ -83,6 +87,13 @@ impl WidgetMatchEvent for App {
             self.driver_profile.perform_oracle_work();
             self.update_ui(cx);
         }
+    }
+}
+
+impl AppMain for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        self.match_event(cx, event);
+        self.ui.handle_event(cx, event, &mut Scope::empty());
     }
 }
 

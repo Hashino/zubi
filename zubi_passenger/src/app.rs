@@ -16,9 +16,7 @@ live_design! {
                 }
             }
             
-            <View> {
-                width: Fill,
-                height: Fill,
+            body = {
                 flow: Down,
                 spacing: 10,
                 padding: 20,
@@ -58,14 +56,20 @@ live_design! {
     }
 }
 
-#[derive(Live, LiveHook, Widget)]
+#[derive(Live, LiveHook)]
 pub struct App {
-    #[deref] ui: WidgetRef,
+    #[live] ui: WidgetRef,
     #[rust] current_ride: Option<Ride>,
 }
 
-impl WidgetMatchEvent for App {
-    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions, _scope: &mut Scope) {
+impl LiveRegister for App {
+    fn live_register(cx: &mut Cx) {
+        crate::makepad_widgets::live_design(cx);
+    }
+}
+
+impl MatchEvent for App {
+    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
         if self.ui.button(id!(request_btn)).clicked(actions) {
             let origin = Location { lat: -23.55, lng: -46.63 };
             let dest = Location { lat: -23.58, lng: -46.65 };
@@ -79,6 +83,13 @@ impl WidgetMatchEvent for App {
             self.ui.label(id!(status_label)).set_text("Searching via Nostr...");
             self.ui.redraw(cx);
         }
+    }
+}
+
+impl AppMain for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        self.match_event(cx, event);
+        self.ui.handle_event(cx, event, &mut Scope::empty());
     }
 }
 

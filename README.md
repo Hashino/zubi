@@ -19,35 +19,67 @@ O workspace contém 3 crates:
 3.  **`zubi_passenger`**: O App do Passageiro.
     *   **UI Minimalista:** Solicitação de corrida e pagamento.
 
-## Como Compilar e Instalar no Android (Windows)
+---
 
-Para gerar os APKs e instalar no seu celular, siga os passos abaixo no **PowerShell (Admin)**.
+## Como Compilar e Instalar no Android
 
-### 1. Pré-requisitos (Via Winget)
+Escolha o seu sistema operacional abaixo para configurar o ambiente.
+
+### Opção A: Windows (via Winget)
+
+Siga os passos abaixo no **PowerShell (Admin)**.
+
+**1. Pré-requisitos**
 Instale Rust, Java JDK e Git:
 ```powershell
 winget install Rustlang.Rustup; winget install Microsoft.OpenJDK.17; winget install Git.Git
 ```
 *Importante: Após instalar, feche e abra o terminal novamente.*
 
-### 2. Configurar Toolchain Android (Makepad)
-Isso baixa o SDK/NDK do Android automaticamente para uma pasta local (sem precisar instalar Android Studio):
+**2. Configurar Toolchain Android (Makepad)**
 ```powershell
 cargo install cargo-makepad
 cargo makepad android install-toolchain
 ```
 
+---
+
+### Opção B: Linux (Ubuntu/Debian)
+
+Siga os passos abaixo no terminal.
+
+**1. Pré-requisitos**
+Instale as dependências de sistema e o Java JDK:
+```bash
+sudo apt-get update
+sudo apt-get install git openjdk-17-jdk build-essential pkg-config libssl-dev libasound2-dev
+```
+
+Instale o Rust (caso não tenha):
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+```
+
+**2. Configurar Toolchain Android (Makepad)**
+```bash
+cargo install cargo-makepad
+cargo makepad android install-toolchain
+```
+
+---
+
 ### 3. Rodar no Celular (Gerar APK)
 Conecte seu celular Android via USB com a **Depuração USB ativada**.
 
 **App do Motorista:**
-```powershell
+```bash
 cd zubi_driver
 cargo makepad android run --release
 ```
 
 **App do Passageiro:**
-```powershell
+```bash
 cd ../zubi_passenger
 cargo makepad android run --release
 ```

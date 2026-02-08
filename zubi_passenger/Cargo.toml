@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 zubi_core = { path = "../zubi_core" }
-makepad-widgets = { version = "0.6", features = ["android"] }
+makepad-widgets = { git = "https://github.com/makepad/makepad", branch = "master" }

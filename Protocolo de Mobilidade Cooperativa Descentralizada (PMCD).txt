@@ -1,0 +1,28 @@
+﻿Protocolo de Mobilidade Cooperativa Descentralizada (PMCD)
+1. Fundamentos da Arquitetura "Serverless & Ownerless"
+Diferente de um app tradicional, aqui o back-end não reside em um datacenter, mas na rede formada pelos próprios usuários.
+* Camada de Aplicação: Interface Local-first (funciona offline e sincroniza via P2P).
+* Camada de Transporte: Libp2p para vencer firewalls e permitir que o celular do passageiro "fale" com o do motorista.
+* Camada de Consenso (O Back-end): Smart Contracts (em redes como Polygon ou Arbitrum para baixo custo) que regem as regras de pagamento e a lógica de distribuição de taxas.
+2. O Ciclo de Vida da Viagem e a Prova de Presença
+Para evitar o ponto cego da fraude de GPS, a confiança é estabelecida entre as partes, não por uma autoridade central:
+* Matchmaking: O motorista anuncia sua localização via Nostr. O passageiro filtra por proximidade.
+* Validação Dinâmica: Durante a viagem, os dois aparelhos trocam "tokens de presença" via Bluetooth ou QR Code a cada intervalo de tempo.
+* Finalização: Ao chegar ao destino, o Smart Contract exige as assinaturas criptográficas de ambos para liberar o pagamento e contabilizar as "Horas Viajadas" para o motorista.
+3. Gamificação e Economia da Governança
+A governança é tratada como uma extensão do trabalho, aproveitando o tempo ocioso do motorista.
+* XP de Governança (Soulbound): Horas de voo e validações geram pontos de reputação intransferíveis.
+* Trabalho de Oráculo: Enquanto espera passageiros, o motorista atua como moderador, validando documentos de novos membros ou mediando disputas simples em troca de "boosts" na sua taxa.
+* Escalonamento de Taxas:
+   * Nível Iniciante: Taxa de contribuição maior (ex: 15%) para financiar o ecossistema.
+   * Nível Veterano: Taxa reduzida (ex: 5%) e maior peso em votações técnicas.
+* Votação Quadrática: Proteção contra a "Aristocracia dos Veteranos", onde o custo para ter múltiplos votos cresce exponencialmente, garantindo que a base de novos motoristas ainda tenha voz.
+4. Gestão de Crises e Segurança (O Fator Humano)
+Sem uma empresa para processar, a responsabilidade é distribuída:
+* Identidade Soberana: Uso de Credenciais Verificáveis. Entidades externas (ex: sindicatos ou empresas de verificação) assinam o perfil do motorista. O protocolo apenas lê se aquela assinatura é válida.
+* Tribunal Descentralizado: Em caso de briga ou má conduta, um júri de outros motoristas de alto nível (escolhidos aleatoriamente pela rede) analisa as provas e vota na resolução, recebendo uma pequena taxa pelo serviço.
+5. Pontos Cegos e Riscos Identificados
+* Latência P2P: A busca por motoristas pode ser mais lenta que no Uber centralizado.
+* Fadiga de Voto: Necessidade de delegação de voto para evitar que decisões técnicas parem o sistema.
+* Segurança Jurídica: A ausência de um CNPJ central pode gerar desafios regulatórios locais.
+________________

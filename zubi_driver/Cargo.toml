@@ -5,6 +5,4 @@ edition = "2021"
 
 [dependencies]
 zubi_core = { path = "../zubi_core" }
-serde = "1.0"
-chrono = "0.4"
-# makepad-widgets = "0.4" # Em um cenário real
+makepad-widgets = { version = "0.6", features = ["android"] }

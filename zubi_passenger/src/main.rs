@@ -1,88 +1,86 @@
-use zubi_core::{Ride, Location, Did, RideState};
-use std::thread;
-use std::time::Duration;
+use makepad_widgets::*;
+use zubi_core::{Ride, Location, Did};
 
-// =========================================================================
-// ZUBI PASSENGER APP (MOCK UI LOOP)
-// =========================================================================
+live_design! {
+    use link::theme::*;
+    use link::shaders::*;
+    use link::widgets::*;
 
-struct PassengerAppState {
-    my_did: Did,
-    current_ride: Option<Ride>,
-}
+    App = {{App}} {
+        ui: <Window> {
+            body = <View> {
+                flow: Down,
+                spacing: 20.0,
+                padding: 20.0,
+                align: {x: 0.5, y: 0.0},
 
-impl PassengerAppState {
-    fn new(did: String) -> Self {
-        Self {
-            my_did: Did(did),
-            current_ride: None,
-        }
-    }
-
-    fn request_ride(&mut self, origin: Location, dest: Location) {
-        println!("Criando solicitação de corrida...");
-        let ride = Ride::new(self.my_did.clone(), origin, dest);
-        self.current_ride = Some(ride);
-        println!("Publicando no Nostr: Procura-se motorista próximo a {:?}...", origin);
-    }
-
-    fn simulate_network_update(&mut self) {
-        // Simula a resposta da rede (encontrar um motorista)
-        if let Some(ride) = &mut self.current_ride {
-            if ride.state == RideState::Searching {
-                println!("[NOSTR] Motorista encontrado! DID: did:zubi:driver:12345");
-                ride.driver_did = Some(Did("did:zubi:driver:12345".to_string()));
-                ride.state = RideState::Accepted;
-            }
-        }
-    }
-}
-
-fn main() {
-    println!("=== ZUBI PASSENGER APP (MVP) ===");
-    
-    let mut app = PassengerAppState::new("did:zubi:passenger:999".to_string());
-    
-    let origin = Location { lat: -23.55, lng: -46.63 };
-    let dest = Location { lat: -23.58, lng: -46.65 };
-
-    // 1. Solicitar Corrida
-    app.request_ride(origin, dest);
-
-    // Loop de simulação
-    let mut ticks = 0;
-    loop {
-        thread::sleep(Duration::from_secs(1));
-        ticks += 1;
-        
-        // Simula atualização de rede
-        if ticks == 2 {
-            app.simulate_network_update();
-        }
-
-        if let Some(ride) = &mut app.current_ride {
-            match ride.state {
-                RideState::Accepted => {
-                    println!("Motorista a caminho...");
-                    // Avança estado artificialmente para demonstração
-                    ride.state = RideState::InProgress; 
-                },
-                RideState::InProgress => {
-                    println!("Em viagem... (Validando presença via Bluetooth)");
-                    // Simula chegada
-                    if ticks > 5 {
-                        ride.state = RideState::Completed;
+                <Label> {
+                    text: "Zubi",
+                    draw_text: {
+                        text_style: {font_size: 30.0, font_weight: 700.0},
+                        color: #000
                     }
-                },
-                RideState::Completed => {
-                    println!("Chegada ao destino!");
-                    println!("Assinando transação com chave privada...");
-                    ride.state = RideState::Settled;
-                    println!("Pagamento enviado. Avalie seu motorista.");
-                    break;
-                },
-                _ => {}
+                }
+
+                <Label> {
+                    text: "Where to?",
+                    draw_text: {color: #555}
+                }
+
+                // Mock Input (Button simulating input for MVP)
+                dest_input = <Button> {
+                    text: "Select Destination: Paulista Ave"
+                }
+
+                request_btn = <Button> {
+                    text: "Request Ride (Pay via Polygon)",
+                    draw_bg: {color: #228822}
+                }
+
+                status_label = <Label> {
+                    text: "No active rides",
+                    draw_text: {color: #888, font_size: 12.0}
+                }
             }
         }
     }
 }
+
+#[derive(Live)]
+pub struct App {
+    #[live] ui: WidgetRef,
+    #[rust] current_ride: Option<Ride>,
+}
+
+impl LiveHook for App {
+    fn before_live_design(cx: &mut Cx) {
+        crate::makepad_widgets::live_design(cx);
+    }
+}
+
+impl AppMain for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        if let Event::Draw(draw) = event {
+            return self.ui.draw_widget_all(&mut DrawEntry::new(cx, draw));
+        }
+
+        let actions = self.ui.handle_widget_event(cx, event);
+
+        if self.ui.button(id!(request_btn)).clicked(&actions) {
+            // Mock da criação da corrida
+            let origin = Location { lat: -23.55, lng: -46.63 };
+            let dest = Location { lat: -23.58, lng: -46.65 };
+            
+            self.current_ride = Some(Ride::new(
+                Did("did:zubi:passenger:me".to_string()), 
+                origin, 
+                dest
+            ));
+
+            self.ui.label(id!(status_label)).set_text("Searching for drivers via Nostr...");
+            self.ui.redraw(cx);
+        }
+    }
+}
+
+app_main!(App);

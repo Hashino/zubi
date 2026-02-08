@@ -1,123 +1,122 @@
-use zubi_core::{DriverProfile, Ride, RideState, Location, Did, DriverTier};
-use std::thread;
-use std::time::Duration;
+use makepad_widgets::*;
+use zubi_core::{DriverProfile, Did};
 
-// =========================================================================
-// ZUBI DRIVER APP (MOCK UI LOOP)
-// =========================================================================
+live_design! {
+    use link::theme::*;
+    use link::shaders::*;
+    use link::widgets::*;
 
-/// Simula o estado da interface do Motorista
-struct DriverAppState {
-    profile: DriverProfile,
-    current_ride: Option<Ride>,
-    is_online: bool,
-    status_message: String,
-}
+    App = {{App}} {
+        ui: <Window> {
+            body = <View> {
+                flow: Down,
+                spacing: 20.0,
+                padding: 20.0,
+                align: {x: 0.5, y: 0.0},
 
-impl DriverAppState {
-    fn new(did: String) -> Self {
-        Self {
-            profile: DriverProfile::new(Did(did)),
-            current_ride: None,
-            is_online: false,
-            status_message: "Offline".to_string(),
-        }
-    }
-
-    fn toggle_online(&mut self) {
-        self.is_online = !self.is_online;
-        if self.is_online {
-            self.status_message = "Online - Publicando localização no Nostr...".to_string();
-        } else {
-            self.status_message = "Offline".to_string();
-        }
-    }
-
-    /// Simula o recebimento de uma proposta de corrida vinda da rede P2P
-    fn receive_ride_request(&mut self, ride: Ride) {
-        if self.is_online && self.current_ride.is_none() {
-            println!("\n[ALERTA] Nova corrida detectada!");
-            println!("Origem: {:?} -> Destino: {:?}", ride.origin, ride.destination);
-            // Auto-aceite para fins de MVP
-            self.current_ride = Some(ride);
-            self.status_message = "Corrida aceita! Indo buscar passageiro...".to_string();
-        }
-    }
-
-    /// Simula a validação de presença (Proof of Presence) via Bluetooth
-    fn simulate_bluetooth_handshake(&mut self) {
-        if let Some(ride) = &mut self.current_ride {
-            if ride.state == RideState::InProgress {
-                let token = format!("PRESENCE_TOKEN_{}", chrono::Utc::now().timestamp());
-                ride.add_presence_token(token.clone());
-                println!("[BLUETOOTH] Token trocado com passageiro: {}", token);
-            }
-        }
-    }
-}
-
-fn main() {
-    println!("=== ZUBI DRIVER APP (MVP) ===");
-    println!("Iniciando sistema...");
-
-    let my_did = "did:zubi:driver:12345".to_string();
-    let mut app = DriverAppState::new(my_did);
-
-    // 1. Login / Identidade
-    println!("Identidade carregada: {:?}", app.profile.did);
-    println!("Nível: {:?} | Taxa do Protocolo: {}%", app.profile.get_tier(), app.profile.get_fee_percentage());
-
-    // 2. Ficar Online
-    app.toggle_online();
-    println!("Status: {}", app.status_message);
-
-    // 3. Simulação de Trabalho de Oráculo (Enquanto espera)
-    println!("\n[ORACLE] Validando documento pendente na rede...");
-    thread::sleep(Duration::from_secs(1));
-    app.profile.perform_oracle_work();
-    println!("Documento validado! Novo XP: {}", app.profile.xp);
-
-    // 4. Receber Corrida (Simulado)
-    let mock_ride = Ride::new(
-        Did("did:zubi:passenger:999".to_string()),
-        Location { lat: -23.55, lng: -46.63 },
-        Location { lat: -23.58, lng: -46.65 },
-    );
-    
-    // Loop de evento simulado
-    let mut ticks = 0;
-    loop {
-        thread::sleep(Duration::from_secs(1));
-        ticks += 1;
-
-        if ticks == 2 {
-            app.receive_ride_request(mock_ride.clone());
-        }
-
-        if let Some(ride) = &mut app.current_ride {
-            match ride.state {
-                RideState::Searching => ride.state = RideState::Accepted,
-                RideState::Accepted => {
-                    println!("Status: Cheguei ao passageiro. Iniciando viagem...");
-                    ride.state = RideState::InProgress;
-                },
-                RideState::InProgress => {
-                    app.simulate_bluetooth_handshake();
-                    if ride.proof_of_presence_log.len() >= 3 {
-                        println!("Status: Destino. Finalizando...");
-                        ride.state = RideState::Completed;
+                <Label> {
+                    text: "Zubi Driver",
+                    draw_text: {
+                        text_style: {font_size: 20.0},
+                        color: #000
                     }
-                },
-                RideState::Completed => {
-                    println!("Status: Viagem encerrada. Aguardando assinatura do Smart Contract...");
-                    ride.state = RideState::Settled;
-                    println!("[CONTRACT] Pagamento liberado na rede Polygon.");
-                    break; 
-                },
-                _ => {}
+                }
+
+                // --- Status Section ---
+                status_label = <Label> {
+                    text: "Status: Offline",
+                    draw_text: {color: #666}
+                }
+
+                toggle_online_btn = <Button> {
+                    text: "Go Online"
+                }
+
+                // --- Governance Section ---
+                <View> {
+                    flow: Down,
+                    spacing: 10.0,
+                    margin: {top: 30.0},
+                    
+                    <Label> {
+                        text: "GOVERNANCE & XP",
+                        draw_text: {text_style: {font_size: 14.0, top_drop: 1.2}, color: #333}
+                    }
+                    
+                    xp_label = <Label> {
+                        text: "Current XP: 0 (Initiate)",
+                        draw_text: {color: #00f}
+                    }
+
+                    <Label> {
+                        text: "Pending Validations: 1",
+                        draw_text: {font_size: 9.0}
+                    }
+
+                    validate_btn = <Button> {
+                        text: "Validate New Driver (+5 XP)"
+                    }
+                }
             }
         }
     }
-    
-    println!("=== FIM DA SIMULAÇÃO ===");
 }
+
+#[derive(Live)]
+pub struct App {
+    #[live] ui: WidgetRef,
+    #[rust] driver_profile: DriverProfile,
+    #[rust] is_online: bool,
+}
+
+impl LiveHook for App {
+    fn before_live_design(cx: &mut Cx) {
+        crate::makepad_widgets::live_design(cx);
+    }
+
+    fn after_new_from_doc(&mut self, _cx: &mut Cx) {
+        self.driver_profile = DriverProfile::new(Did("did:zubi:driver:me".to_string()));
+    }
+}
+
+impl App {
+    fn update_ui(&mut self, cx: &mut Cx) {
+        // Atualiza Status
+        let status_text = if self.is_online { "Status: ONLINE (Nostr Active)" } else { "Status: Offline" };
+        self.ui.label(id!(status_label)).set_text(status_text);
+
+        // Atualiza XP
+        let tier = format!("{:?}", self.driver_profile.get_tier());
+        let xp_text = format!("XP: {} ({}) - Tax: {}%", 
+            self.driver_profile.xp, 
+            tier,
+            self.driver_profile.get_fee_percentage()
+        );
+        self.ui.label(id!(xp_label)).set_text(&xp_text);
+        
+        self.ui.redraw(cx);
+    }
+}
+
+impl AppMain for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        if let Event::Draw(draw) = event {
+            return self.ui.draw_widget_all(&mut DrawEntry::new(cx, draw));
+        }
+
+        let actions = self.ui.handle_widget_event(cx, event);
+
+        if self.ui.button(id!(toggle_online_btn)).clicked(&actions) {
+            self.is_online = !self.is_online;
+            self.update_ui(cx);
+        }
+
+        if self.ui.button(id!(validate_btn)).clicked(&actions) {
+            // Simula trabalho de oráculo
+            self.driver_profile.perform_oracle_work();
+            self.update_ui(cx);
+        }
+    }
+}
+
+app_main!(App);

@@ -20,17 +20,10 @@
       "package": "com.zubi.passenger",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.CAMERA"
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Permitir acesso à câmera para escanear QR codes."
-        }
-      ],
       [
         "expo-location",
         {

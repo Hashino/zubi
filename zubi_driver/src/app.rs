@@ -1,5 +1,5 @@
 use crate::makepad_widgets::*;
-use zubi_core::{DriverProfile, Did};
+use zubi_core::DriverProfile;
 
 live_design! {
     import makepad_widgets::base::*;
@@ -99,13 +99,6 @@ impl WidgetMatchEvent for App {
             self.driver_profile.perform_oracle_work();
             self.update_ui(cx);
         }
-    }
-}
-
-impl AppMain for App {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.match_event(cx, event);
-        self.view.handle_event(cx, event, &mut Scope::empty());
     }
 }
 

@@ -98,11 +98,4 @@ impl WidgetMatchEvent for App {
     }
 }
 
-impl AppMain for App {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.match_event(cx, event);
-        self.view.handle_event(cx, event, &mut Scope::empty());
-    }
-}
-
 app_main!(App);

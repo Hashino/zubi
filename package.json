@@ -1,0 +1,16 @@
+{
+  "name": "zubi-mvp",
+  "version": "1.0.0",
+  "description": "MVP - Sistema de Mobilidade Cooperativa Descentralizada",
+  "main": "index.js",
+  "scripts": {
+    "start:passenger": "cd passenger-app && npm start",
+    "start:driver": "cd driver-app && npm start",
+    "build:passenger": "cd passenger-app && eas build --platform android --profile production",
+    "build:driver": "cd driver-app && eas build --platform android --profile production",
+    "install:all": "npm install && cd passenger-app && npm install && cd ../driver-app && npm install"
+  },
+  "keywords": ["zubi", "p2p", "mobility", "blockchain"],
+  "author": "",
+  "license": "MIT"
+}

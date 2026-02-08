@@ -1,100 +1,149 @@
-# Zubi - Decentralized Cooperative Mobility (MVP)
+# Zubi - Protocolo de Mobilidade Cooperativa Descentralizada
 
-Este é o MVP do protocolo **PMCD** (Protocolo de Mobilidade Cooperativa Descentralizada) implementado em **Rust** usando **Makepad** para a interface gráfica mobile.
+MVP de um sistema de mobilidade urbana baseado em rede P2P e blockchain, sem intermediários centralizados.
+
+## Arquitetura
+
+- **Passageiro App**: Busca motoristas, solicita viagens e valida presença via QR Code
+- **Motorista App**: Anuncia disponibilidade, aceita viagens e gera QR Codes de validação
+- **P2P Network**: Comunicação direta entre passageiros e motoristas (simulada no MVP)
+- **Smart Contracts**: Pagamentos e governança descentralizada (simulada no MVP)
+
+## Funcionalidades Implementadas
+
+### App do Passageiro
+- ✅ Busca de motoristas próximos via P2P
+- ✅ Visualização de perfil, nível e taxa do motorista
+- ✅ Solicitação de viagem
+- ✅ Validação de presença via QR Code durante viagem
+- ✅ Finalização de viagem e processamento de pagamento via blockchain
+
+### App do Motorista
+- ✅ Sistema de níveis e XP (Iniciante/Intermediário/Veterano)
+- ✅ Anúncio de disponibilidade na rede P2P
+- ✅ Recebimento de solicitações de passageiros
+- ✅ Geração de QR Code para validação de presença
+- ✅ Finalização de viagem e recebimento de pagamento
+- ✅ Taxas progressivas baseadas em nível (15% -> 10% -> 5%)
+
+## Requisitos
+
+- Node.js 18+
+- npm ou yarn
+- Expo CLI
+- Android Studio (para gerar APKs) ou Expo EAS
+
+## Instalação
+
+```bash
+# Instalar dependências de todos os projetos
+npm run install:all
+
+# Ou instalar individualmente
+cd passenger-app && npm install
+cd ../driver-app && npm install
+```
+
+## Executar em Desenvolvimento
+
+```bash
+# App do Passageiro
+npm run start:passenger
+
+# App do Motorista
+npm run start:driver
+```
+
+## Gerar APKs
+
+### Método 1: Expo EAS (Recomendado)
+
+```bash
+# Configurar EAS
+npm install -g eas-cli
+eas login
+
+# Build do App do Passageiro
+cd passenger-app
+eas build --platform android --profile production
+
+# Build do App do Motorista
+cd ../driver-app
+eas build --platform android --profile production
+```
+
+### Método 2: Build Local
+
+```bash
+# Instalar Expo CLI
+npm install -g expo-cli
+
+# Gerar APK do Passageiro
+cd passenger-app
+expo build:android
+
+# Gerar APK do Motorista
+cd ../driver-app
+expo build:android
+```
 
 ## Estrutura do Projeto
 
-O workspace contém 3 crates:
-
-1.  **`zubi_core`**: A "alma" do protocolo. Contém:
-    *   Lógica de "Serverless & Ownerless".
-    *   Estruturas de Dados: `Ride`, `DriverProfile`, `Location`.
-    *   **Prova de Presença**: Lógica de `add_presence_token` para validação Bluetooth.
-    *   **Governança**: Sistema de XP, Níveis (Iniciante/Veterano) e cálculo de taxas (15% vs 5%).
-
-2.  **`zubi_driver`**: O App do Motorista.
-    *   **UI Minimalista:** Painel de Governança e Status Online/Offline.
-    *   **Oráculo:** Simulação de validação de docs para ganhar XP.
-
-3.  **`zubi_passenger`**: O App do Passageiro.
-    *   **UI Minimalista:** Solicitação de corrida e pagamento.
-
----
-
-## Como Compilar e Instalar no Android
-
-Escolha o seu sistema operacional abaixo para configurar o ambiente.
-
-### Opção A: Windows (via Winget)
-
-Siga os passos abaixo no **PowerShell (Admin)**.
-
-**1. Pré-requisitos**
-Instale Rust, Java JDK e Git:
-```powershell
-winget install Rustlang.Rustup; winget install Microsoft.OpenJDK.17; winget install Git.Git
 ```
-*Importante: Após instalar, feche e abra o terminal novamente.*
-
-**2. Configurar Toolchain Android (Makepad)**
-```powershell
-cargo install cargo-makepad
-cargo makepad android install-toolchain
+zubi/
+├── passenger-app/          # App do Passageiro
+│   ├── src/
+│   │   ├── screens/       # Telas do app
+│   │   └── services/      # Serviços P2P e blockchain
+│   ├── App.js
+│   └── package.json
+├── driver-app/            # App do Motorista
+│   ├── src/
+│   │   ├── screens/       # Telas do app
+│   │   └── services/      # Serviços de motorista
+│   ├── App.js
+│   └── package.json
+└── package.json           # Scripts principais
 ```
 
----
+## Sistema de Taxas
 
-### Opção B: Linux (Ubuntu/Debian)
+- **Iniciante** (0-500 XP): 15% de taxa
+- **Intermediário** (500-1000 XP): 10% de taxa
+- **Veterano** (1000+ XP): 5% de taxa
 
-Siga os passos abaixo no terminal.
+Motoristas ganham 10 XP por viagem completada.
 
-**1. Pré-requisitos**
-Instale as dependências de sistema e o Java JDK:
-```bash
-sudo apt-get update
-sudo apt-get install git openjdk-17-jdk build-essential pkg-config libssl-dev libasound2-dev
-```
+## Protocolo PMCD
 
-Instale o Rust (caso não tenha):
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-```
+Baseado no documento zubi.txt, este MVP implementa:
 
-**2. Configurar Toolchain Android (Makepad)**
-```bash
-cargo install cargo-makepad
-cargo makepad android install-toolchain
-```
+1. **Matchmaking P2P**: Descoberta descentralizada de motoristas
+2. **Validação de Presença**: QR Codes para provar presença durante viagem
+3. **Pagamento via Smart Contract**: Processamento automático de pagamento
+4. **Economia de Governança**: Sistema de XP e taxas progressivas
 
----
+## Limitações do MVP
 
-### 3. Rodar no Celular (Gerar APK)
-Conecte seu celular Android via USB com a **Depuração USB ativada**.
+Para simplificar o MVP, algumas funcionalidades foram simuladas:
 
-**App do Motorista:**
-```bash
-cd zubi_driver
-cargo makepad android run --release
-```
+- Rede P2P (libp2p) simulada com dados mock
+- Smart contracts simulados (sem blockchain real)
+- Nostr não implementado (seria usado para anúncio de motoristas)
+- Bluetooth para validação não implementado (usa QR Code apenas)
+- Tribunal descentralizado não implementado
+- Trabalho de oráculo não implementado
 
-**App do Passageiro:**
-```bash
-cd ../zubi_passenger
-cargo makepad android run --release
-```
+## Próximos Passos
 
-## Como Executar no PC (Desktop Mode)
-Se quiser testar a UI no computador antes de passar para o celular:
+1. Integrar libp2p para rede P2P real
+2. Implementar smart contracts em Polygon/Arbitrum
+3. Adicionar Nostr para descoberta de motoristas
+4. Implementar validação via Bluetooth
+5. Adicionar sistema de reputação e tribunal descentralizado
+6. Implementar trabalho de oráculo
+7. Adicionar credenciais verificáveis (DID)
 
-```bash
-cd zubi_driver
-cargo run
-```
+## Licença
 
-## Implementação dos Requisitos do PDF
-
-- [x] **Serverless:** Nenhuma dependência de API centralizada no código.
-- [x] **Matchmaking:** Lógica de filtragem geoespacial preparada no Core.
-- [x] **Prova de Presença:** Vetor `proof_of_presence_log` na struct `Ride` para armazenar tokens Bluetooth.
-- [x] **Gamificação:** Struct `DriverProfile` com XP, verificação de identidade e níveis de taxa dinâmica.
+MIT

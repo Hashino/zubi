@@ -1,1 +1,0 @@
-C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\libzubi_driver.so: C:\Users\Usuario\Projects\zubi\zubi_core\src\lib.rs C:\Users\Usuario\Projects\zubi\zubi_driver\src\app.rs C:\Users\Usuario\Projects\zubi\zubi_driver\src\lib.rs

@@ -32,11 +32,6 @@
           "isAndroidBackgroundLocationEnabled": true
         }
       ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "3b9c5f1e-8d2a-4c7f-9e6b-1a4d8c2f7e9a"
-      }
-    }
+    ]
   }
 }

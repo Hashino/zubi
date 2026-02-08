@@ -1,5 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// TODO: Replace with real P2P networking
+// Current: Mock/simulation for MVP
+// Production options:
+// - libp2p: Full-featured P2P networking library
+// - Nostr: Decentralized relay network
+// - Gun.js: Distributed graph database
+// - IPFS: For file storage and discovery
+//
+// Requirements for production:
+// 1. Peer discovery via DHT (Distributed Hash Table)
+// 2. NAT traversal for peer connections
+// 3. Encrypted communication (noise protocol)
+// 4. Offline message queuing
+// 5. Connection resilience and reconnection logic
+
 // Simulação de rede P2P para MVP
 // Em produção, usar libp2p ou similar
 const P2PContext = createContext();
@@ -88,6 +103,14 @@ export const P2PProvider = ({ children }) => {
   };
 
   // Validação de presença via QR code
+  // TODO: Implement cryptographic signatures for production
+  // Current: Simple JSON parsing (insecure)
+  // Production requirements:
+  // 1. Driver signs QR data with private key
+  // 2. Passenger verifies signature with driver's public key
+  // 3. Include timestamp and nonce to prevent replay attacks
+  // 4. Optionally include GPS coordinates for location validation
+  // 5. Store validation on blockchain or distributed log
   const validatePresence = (qrData) => {
     // Em produção, usar assinaturas criptográficas
     try {
@@ -107,6 +130,18 @@ export const P2PProvider = ({ children }) => {
   };
 
   // Finalizar viagem e iniciar processo de pagamento
+  // TODO: Integrate with real blockchain (Polygon/Arbitrum)
+  // Current: Mock transaction simulation
+  // Production implementation:
+  // 1. Call smart contract `finishTrip(tripId, fare, validations)`
+  // 2. Smart contract calculates fee based on driver XP level
+  // 3. Transfer funds from passenger to driver (minus protocol fee)
+  // 4. Store trip data on-chain or IPFS
+  // 5. Emit event for indexing
+  // 6. Update driver XP (+10 per trip)
+  // 
+  // Smart contract address: TBD
+  // Network: Polygon Mumbai (testnet) / Polygon (mainnet)
   const finalizeTripPayment = async (tripData) => {
     // Em produção, interagir com smart contract
     const mockTransaction = {

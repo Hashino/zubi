@@ -10,6 +10,20 @@ import {
 } from 'react-native';
 import { useP2P } from '../services/P2PService';
 
+// TODO: Re-implement QR code scanning for presence validation
+// The Camera component was removed to fix build issues
+// Once build is stable, add back:
+// import { CameraView } from 'expo-camera';
+// 
+// For production:
+// 1. Request camera permissions on mount
+// 2. Show camera view when validating presence
+// 3. Scan QR code from driver's app
+// 4. Parse and validate QR data
+// 5. Submit validation to P2P network
+//
+// Current MVP: Uses simulated validation (button click)
+
 export default function TripScreen({ route, navigation }) {
   const { driver, tripId } = route.params;
   const { validatePresence, finalizeTripPayment, disconnect } = useP2P();
@@ -26,7 +40,9 @@ export default function TripScreen({ route, navigation }) {
   };
 
   const handleValidatePresence = () => {
-    // Simular validação sem scanner real
+    // MVP: Simular validação sem scanner real
+    // TODO: Replace with actual QR code scanning
+    // See implementation notes at top of file
     const mockQRData = JSON.stringify({
       driverId: driver.id,
       tripId: tripId,

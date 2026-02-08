@@ -1,0 +1,4 @@
+The field "cli.appVersionSource" is not set, but it will be required in the future. Learn more: https://docs.expo.dev/build-reference/app-versions/
+EAS project not configured.
+Input is required, but stdin is not readable. Failed to display prompt: Would you like to automatically create an EAS project for @hashino/zubi-driver?
+    Error: build command failed.

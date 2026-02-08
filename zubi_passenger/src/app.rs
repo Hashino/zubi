@@ -1,4 +1,4 @@
-use makepad_widgets::*;
+use crate::makepad_widgets::*;
 use zubi_core::{Ride, Location, Did};
 
 live_design! {

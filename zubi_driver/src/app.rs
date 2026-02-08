@@ -1,4 +1,4 @@
-use makepad_widgets::*;
+use crate::makepad_widgets::*;
 use zubi_core::{DriverProfile, Did};
 
 live_design! {

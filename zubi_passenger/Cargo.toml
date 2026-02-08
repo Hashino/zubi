@@ -3,6 +3,11 @@ name = "zubi_passenger"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "zubi_passenger"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
 zubi_core = { path = "../zubi_core" }
 makepad-widgets = { git = "https://github.com/makepad/makepad", branch = "master" }

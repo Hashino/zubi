@@ -96,25 +96,6 @@ export default function TripScreen({ route, navigation }) {
     }
   };
 
-  const handleValidatePresence = () => {
-    // Simular validação sem scanner real
-    const mockQRData = JSON.stringify({
-      driverId: driver.id,
-      tripId: tripId,
-      timestamp: Date.now()
-    });
-    
-    const validation = validatePresence(mockQRData);
-    
-    if (validation.valid) {
-      setValidations([...validations, validation]);
-      Alert.alert(
-        'Validação Simulada',
-        'Presença confirmada! Em produção, você escanearia o QR Code do motorista.'
-      );
-    }
-  };
-
   if (!driver) {
     return (
       <SafeAreaView style={styles.container}>

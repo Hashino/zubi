@@ -1,0 +1,11 @@
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\makepad_http-67b5d762316184c0.d: C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\lib.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\digest.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\utils.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\server.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\websocket.rs
+
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\libmakepad_http-67b5d762316184c0.rlib: C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\lib.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\digest.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\utils.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\server.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\websocket.rs
+
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\libmakepad_http-67b5d762316184c0.rmeta: C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\lib.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\digest.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\utils.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\server.rs C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\websocket.rs
+
+C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\lib.rs:
+C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\digest.rs:
+C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\utils.rs:
+C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\server.rs:
+C:\Users\Usuario\.cargo\git\checkouts\makepad-ec2f134f34cd9f98\d6c0aa6\libs\http\src\websocket.rs:

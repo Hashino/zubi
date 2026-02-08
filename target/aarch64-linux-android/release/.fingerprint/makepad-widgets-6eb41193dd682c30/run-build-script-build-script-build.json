@@ -1,0 +1,1 @@
+{"rustc":15808436582571256419,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[7571271849859063548,"build_script_build",false,11575747262395254850]],"local":[{"RerunIfEnvChanged":{"var":"MAKEPAD","val":"lines"}}],"rustflags":["--cfg","android_target=\"aarch64\""],"config":0,"compile_kind":0}

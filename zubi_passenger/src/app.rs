@@ -2,72 +2,87 @@ use crate::makepad_widgets::*;
 use zubi_core::{Ride, Location, Did};
 
 live_design! {
-    use link::theme::*;
-    use link::shaders::*;
-    use link::widgets::*;
+    import makepad_widgets::base::*;
+    import makepad_widgets::theme_desktop_dark::*;
 
     App = {{App}} {
         ui: <Window> {
-            body = <View> {
+            show_bg: true,
+            width: Fill,
+            height: Fill,
+            draw_bg: {
+                fn pixel(self) -> vec4 {
+                    return #fff
+                }
+            }
+            
+            body = <ScrollYView> {
                 flow: Down,
-                spacing: 20.0,
-                padding: 20.0,
-                align: {x: 0.5, y: 0.0},
-
-                <Label> {
-                    text: "Zubi",
-                    draw_text: {
-                        text_style: {font_size: 30.0, font_weight: 700.0},
-                        color: #000
+                spacing: 10,
+                padding: 20,
+                
+                <View> {
+                    width: Fill,
+                    height: Fit,
+                    flow: Down,
+                    spacing: 20,
+                    
+                    <Label> {
+                        draw_text: {
+                            text_style: <TITLE_TEXT>{},
+                            color: #000
+                        }
+                        text: "Zubi"
                     }
-                }
-
-                <Label> {
-                    text: "Where to?",
-                    draw_text: {color: #555}
-                }
-
-                // Mock Input (Button simulating input for MVP)
-                dest_input = <Button> {
-                    text: "Select Destination: Paulista Ave"
-                }
-
-                request_btn = <Button> {
-                    text: "Request Ride (Pay via Polygon)",
-                    draw_bg: {color: #228822}
-                }
-
-                status_label = <Label> {
-                    text: "No active rides",
-                    draw_text: {color: #888, font_size: 12.0}
+                    
+                    <Label> {
+                        draw_text: {
+                            color: #555
+                        }
+                        text: "Where to?"
+                    }
+                    
+                    dest_btn = <Button> {
+                        text: "Select: Paulista Ave"
+                    }
+                    
+                    request_btn = <Button> {
+                        text: "Request Ride (Polygon)"
+                    }
+                    
+                    status_label = <Label> {
+                        draw_text: {
+                            color: #888,
+                            text_style: {font_size: 9}
+                        }
+                        text: "No active rides"
+                    }
                 }
             }
         }
     }
 }
 
-#[derive(Live)]
+#[derive(Live, LiveHook, Widget)]
 pub struct App {
-    #[live] ui: WidgetRef,
+    #[deref] view: View,
     #[rust] current_ride: Option<Ride>,
 }
 
-impl LiveHook for App {
-    fn before_live_design(cx: &mut Cx) {
-        crate::makepad_widgets::live_design(cx);
+impl Widget for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        self.view.handle_event(cx, event, scope);
+        self.widget_match_event(cx, event, scope);
+    }
+    
+    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
+        self.view.draw_walk(cx, scope, walk)
     }
 }
 
-impl AppMain for App {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        if let Event::Draw(draw) = event {
-            return self.ui.draw_widget_all(&mut DrawEntry::new(cx, draw));
-        }
-
-        let actions = self.ui.handle_widget_event(cx, event);
-
-        if self.ui.button(id!(request_btn)).clicked(&actions) {
-            // Mock da criação da corrida
+impl WidgetMatchEvent for App {
+    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions, _scope: &mut Scope) {
+        if self.button(id!(request_btn)).clicked(actions) {
             let origin = Location { lat: -23.55, lng: -46.63 };
             let dest = Location { lat: -23.58, lng: -46.65 };
             
@@ -76,10 +91,17 @@ impl AppMain for App {
                 origin, 
                 dest
             ));
-
-            self.ui.label(id!(status_label)).set_text("Searching for drivers via Nostr...");
-            self.ui.redraw(cx);
+            
+            self.label(id!(status_label)).set_text("Searching via Nostr...");
+            self.redraw(cx);
         }
+    }
+}
+
+impl AppMain for App {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        self.match_event(cx, event);
+        self.view.handle_event(cx, event, &mut Scope::empty());
     }
 }
 

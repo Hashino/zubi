@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use sha2::{Sha256, Digest};
 
 // =========================================================================
 // 1. FUNDAMENTOS DA ARQUITETURA (PMCD - Protocolo)
@@ -85,6 +84,18 @@ pub struct DriverProfile {
     pub verified_by: Vec<String>, // Assinaturas de Sindicatos/Empresas (Verifiable Credentials)
     pub total_rides: u32,
     pub governance_score: u32, // Ganho via "Trabalho de Oráculo"
+}
+
+impl Default for DriverProfile {
+    fn default() -> Self {
+        Self {
+            did: Did("".to_string()),
+            xp: 0,
+            verified_by: Vec::new(),
+            total_rides: 0,
+            governance_score: 0,
+        }
+    }
 }
 
 impl DriverProfile {

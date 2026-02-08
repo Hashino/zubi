@@ -1,0 +1,3 @@
+cargo:rustc-check-cfg=cfg(lines)
+cargo:rerun-if-env-changed=MAKEPAD
+cargo:rustc-cfg=lines

@@ -1,0 +1,108 @@
+name: EAS Build & Deploy - Driver App
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'driver-app/**'
+      - '.github/workflows/eas-build-driver.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'driver-app/**'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile to use'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+      submit:
+        description: 'Submit to Play Store after build?'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: Build Driver App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./driver-app
+    
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+          cache-dependency-path: driver-app/package-lock.json
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🚀 Build app
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
+          eas build --platform android --profile $PROFILE --non-interactive --no-wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  submit:
+    name: Submit to Play Store
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.submit == 'true')
+    defaults:
+      run:
+        working-directory: ./driver-app
+    
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+          cache-dependency-path: driver-app/package-lock.json
+
+      - name: 🏗 Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🚀 Submit to Google Play (Internal Testing)
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📢 Notify success
+        if: success()
+        run: |
+          echo "✅ Build and submission successful!"
+          echo "Check the Play Console: https://play.google.com/console"

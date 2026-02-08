@@ -1,0 +1,10 @@
+[package]
+name = "zubi_driver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zubi_core = { path = "../zubi_core" }
+serde = "1.0"
+chrono = "0.4"
+# makepad-widgets = "0.4" # Em um cenário real

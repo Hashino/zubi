@@ -11,3 +11,10 @@ crate-type = ["cdylib"]
 [dependencies]
 zubi_core = { path = "../zubi_core" }
 makepad-widgets = { git = "https://github.com/makepad/makepad", branch = "master" }
+
+[target.aarch64-linux-android.dependencies]
+
+# Workaround para problemas de linkagem no Windows
+[profile.release]
+panic = "abort"
+lto = false

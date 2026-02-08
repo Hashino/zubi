@@ -8,14 +8,12 @@ import {
   Alert,
   ScrollView
 } from 'react-native';
-import { Camera } from 'expo-camera';
 import { useP2P } from '../services/P2PService';
 
 export default function TripScreen({ route, navigation }) {
   const { driver, tripId } = route.params;
   const { validatePresence, finalizeTripPayment, disconnect } = useP2P();
   const [tripStatus, setTripStatus] = useState('waiting'); // waiting, ongoing, validating, completed
-  const [showScanner, setShowScanner] = useState(false);
   const [validations, setValidations] = useState([]);
   const [fare] = useState((Math.random() * 20 + 10).toFixed(2)); // Mock fare
 
@@ -23,26 +21,26 @@ export default function TripScreen({ route, navigation }) {
     setTripStatus('ongoing');
     Alert.alert(
       'Viagem Iniciada',
-      'A viagem começou! Durante o trajeto, valide sua presença escaneando o QR Code do motorista.'
+      'A viagem começou! Durante o trajeto, você pode validar sua presença (simulado no MVP).'
     );
   };
 
-  const handleScanQRCode = async ({ data }) => {
-    setShowScanner(false);
-    setTripStatus('validating');
-
-    const validation = validatePresence(data);
+  const handleValidatePresence = () => {
+    // Simular validação sem scanner real
+    const mockQRData = JSON.stringify({
+      driverId: driver.id,
+      tripId: tripId,
+      timestamp: Date.now()
+    });
+    
+    const validation = validatePresence(mockQRData);
     
     if (validation.valid) {
       setValidations([...validations, validation]);
       Alert.alert(
-        'Validação Bem-sucedida',
-        'Presença confirmada! Token de validação registrado.'
+        'Validação Simulada',
+        'Presença confirmada! Em produção, você escanearia o QR Code do motorista.'
       );
-      setTripStatus('ongoing');
-    } else {
-      Alert.alert('Erro', validation.error || 'QR Code inválido');
-      setTripStatus('ongoing');
     }
   };
 
@@ -98,38 +96,38 @@ export default function TripScreen({ route, navigation }) {
     }
   };
 
-  const requestCameraPermission = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    if (status === 'granted') {
-      setShowScanner(true);
-    } else {
-      Alert.alert('Erro', 'Permissão de câmera negada');
+  const handleValidatePresence = () => {
+    // Simular validação sem scanner real
+    const mockQRData = JSON.stringify({
+      driverId: driver.id,
+      tripId: tripId,
+      timestamp: Date.now()
+    });
+    
+    const validation = validatePresence(mockQRData);
+    
+    if (validation.valid) {
+      setValidations([...validations, validation]);
+      Alert.alert(
+        'Validação Simulada',
+        'Presença confirmada! Em produção, você escanearia o QR Code do motorista.'
+      );
     }
   };
 
-  if (showScanner) {
+  if (!driver) {
     return (
-      <Camera
-        style={StyleSheet.absoluteFillObject}
-        onBarCodeScanned={handleScanQRCode}
-      >
-        <SafeAreaView style={styles.scannerContainer}>
-          <View style={styles.scannerOverlay}>
-            <Text style={styles.scannerText}>
-              Escaneie o QR Code do motorista
-            </Text>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                setShowScanner(false);
-                setTripStatus('ongoing');
-              }}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </Camera>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Nenhuma viagem ativa</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.buttonText}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -192,9 +190,9 @@ export default function TripScreen({ route, navigation }) {
           <>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={requestCameraPermission}
+              onPress={handleValidatePresence}
             >
-              <Text style={styles.buttonText}>📷 Validar Presença (QR Code)</Text>
+              <Text style={styles.buttonText}>✓ Validar Presença (Simulado)</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -210,7 +208,7 @@ export default function TripScreen({ route, navigation }) {
           <Text style={styles.infoTitle}>💡 Como funciona?</Text>
           <Text style={styles.infoText}>
             1. Inicie a viagem quando entrar no veículo{'\n'}
-            2. Durante o trajeto, valide sua presença escaneando o QR Code do motorista{'\n'}
+            2. Durante o trajeto, valide sua presença (simulado no MVP){'\n'}
             3. Ao chegar no destino, finalize a viagem{'\n'}
             4. O pagamento será processado via smart contract
           </Text>

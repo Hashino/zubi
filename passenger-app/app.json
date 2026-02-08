@@ -4,34 +4,25 @@
     "slug": "zubi-passenger",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#4CAF50"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zubi.passenger"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4CAF50"
       },
       "package": "com.zubi.passenger",
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA"
       ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
@@ -46,6 +37,11 @@
           "locationAlwaysAndWhenInUsePermission": "Permitir acesso à localização para encontrar motoristas próximos."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f2d9e42c-07a2-41db-a5ed-6d48b48a0fa1"
+      }
+    }
   }
 }

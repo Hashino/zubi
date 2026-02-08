@@ -16,54 +16,49 @@ live_design! {
                 }
             }
             
-            body = <ScrollYView> {
+            <View> {
+                width: Fill,
+                height: Fill,
                 flow: Down,
                 spacing: 10,
                 padding: 20,
                 
-                <View> {
-                    width: Fill,
-                    height: Fit,
-                    flow: Down,
-                    spacing: 20,
-                    
-                    <Label> {
-                        draw_text: {
-                            text_style: <TITLE_TEXT>{},
-                            color: #000
-                        }
-                        text: "Zubi Driver"
+                <Label> {
+                    draw_text: {
+                        text_style: <TITLE_TEXT>{},
+                        color: #000
                     }
-                    
-                    status_label = <Label> {
-                        draw_text: {
-                            color: #666
-                        }
-                        text: "Status: Offline"
+                    text: "Zubi Driver"
+                }
+                
+                status_label = <Label> {
+                    draw_text: {
+                        color: #666
                     }
-                    
-                    toggle_btn = <Button> {
-                        text: "Go Online"
+                    text: "Status: Offline"
+                }
+                
+                toggle_btn = <Button> {
+                    text: "Go Online"
+                }
+                
+                <Label> {
+                    draw_text: {
+                        text_style: <TITLE_TEXT>{font_size: 11},
+                        color: #333
                     }
-                    
-                    <Label> {
-                        draw_text: {
-                            text_style: <TITLE_TEXT>{font_size: 11},
-                            color: #333
-                        }
-                        text: "GOVERNANCE & XP"
+                    text: "GOVERNANCE & XP"
+                }
+                
+                xp_label = <Label> {
+                    draw_text: {
+                        color: #00f
                     }
-                    
-                    xp_label = <Label> {
-                        draw_text: {
-                            color: #00f
-                        }
-                        text: "XP: 0 (Initiate)"
-                    }
-                    
-                    validate_btn = <Button> {
-                        text: "Validate Driver (+5 XP)"
-                    }
+                    text: "XP: 0 (Initiate)"
+                }
+                
+                validate_btn = <Button> {
+                    text: "Validate Driver (+5 XP)"
                 }
             }
         }
@@ -72,30 +67,19 @@ live_design! {
 
 #[derive(Live, LiveHook, Widget)]
 pub struct App {
-    #[deref] view: View,
+    #[deref] ui: WidgetRef,
     #[rust] driver_profile: DriverProfile,
     #[rust] is_online: bool,
 }
 
-impl Widget for App {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        self.view.handle_event(cx, event, scope);
-        self.widget_match_event(cx, event, scope);
-    }
-    
-    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.view.draw_walk(cx, scope, walk)
-    }
-}
-
 impl WidgetMatchEvent for App {
     fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions, _scope: &mut Scope) {
-        if self.button(id!(toggle_btn)).clicked(actions) {
+        if self.ui.button(id!(toggle_btn)).clicked(actions) {
             self.is_online = !self.is_online;
             self.update_ui(cx);
         }
         
-        if self.button(id!(validate_btn)).clicked(actions) {
+        if self.ui.button(id!(validate_btn)).clicked(actions) {
             self.driver_profile.perform_oracle_work();
             self.update_ui(cx);
         }
@@ -105,7 +89,7 @@ impl WidgetMatchEvent for App {
 impl App {
     fn update_ui(&mut self, cx: &mut Cx) {
         let status = if self.is_online { "Status: ONLINE (Nostr Active)" } else { "Status: Offline" };
-        self.label(id!(status_label)).set_text(status);
+        self.ui.label(id!(status_label)).set_text(status);
         
         let tier = format!("{:?}", self.driver_profile.get_tier());
         let xp_text = format!("XP: {} ({}) - Tax: {}%", 
@@ -113,9 +97,9 @@ impl App {
             tier,
             self.driver_profile.get_fee_percentage()
         );
-        self.label(id!(xp_label)).set_text(&xp_text);
+        self.ui.label(id!(xp_label)).set_text(&xp_text);
         
-        self.redraw(cx);
+        self.ui.redraw(cx);
     }
 }
 

@@ -9,40 +9,32 @@
 - **Versão**: 1.0.0
 - **Data**: 08/02/2026
 
-### ❌ Driver App (Zubi Motorista)  
-- **Status**: Aguardando criação do projeto EAS
-- **Problema**: EAS CLI requer interação manual para criar projeto
-- **Solução**: Criar projeto manualmente
+### ✅ Driver App (Zubi Motorista)
+- **Status**: Build concluído com sucesso
+- **Download**: https://expo.dev/artifacts/eas/t3czz8hXfnZPdk14TJEQWt.apk
+- **Build ID**: daf55df7-6ac7-4b69-a762-c2e9cbc8aa47
+- **Versão**: 1.0.0
+- **Data**: 08/02/2026
 
-## Como Criar o Projeto EAS para Driver App
+## EAS Project Info
 
-### Opção 1: Via Web
-1. Acesse https://expo.dev/accounts/hashino/projects
-2. Clique em "Create Project"
-3. Nome: `zubi-driver`
-4. Copie o Project ID gerado
-5. Adicione ao `driver-app/app.json`:
-```json
-"extra": {
-  "eas": {
-    "projectId": "SEU_PROJECT_ID_AQUI"
-  }
-}
-```
-6. Execute: `eas build --platform android --profile preview`
+### Passenger App
+- **Project ID**: f2d9e42c-07a2-41db-a5ed-6d48b48a0fa1
+- **Project URL**: https://expo.dev/accounts/hashino/projects/zubi-passenger
 
-### Opção 2: Via CLI Interativo
-1. Execute: `eas init` (no diretório driver-app)
-2. Responda "y" quando perguntado
-3. Execute: `eas build --platform android --profile preview`
+### Driver App
+- **Project ID**: 5c3e10e5-877f-4525-9837-e90c4fe01486
+- **Project URL**: https://expo.dev/accounts/hashino/projects/zubi-driver
 
-## Instalação do APK no Android
+## Instalação dos APKs no Android
 
-1. Baixe o APK do Passenger App pelo link acima
+1. Baixe os APKs pelos links acima
 2. No celular Android, vá em Configurações > Segurança
 3. Ative "Fontes Desconhecidas" ou "Instalar apps desconhecidos"
 4. Abra o arquivo APK baixado
 5. Toque em "Instalar"
+
+**Nota**: Para testar o fluxo completo, você precisa instalar ambos os apps (Passenger e Driver) em dispositivos diferentes ou simular com um dispositivo físico e um emulador.
 
 ## Próximos Passos
 

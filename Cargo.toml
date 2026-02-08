@@ -5,3 +5,6 @@ members = [
     "zubi_driver",
 ]
 resolver = "2"
+
+[profile.release]
+panic = "abort"

@@ -1,0 +1,11 @@
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\sdfer-8d8a341eb088f729.d: C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\lib.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\bruteforce_bitmap.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\esdt.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\img.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\../README.md
+
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\libsdfer-8d8a341eb088f729.rlib: C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\lib.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\bruteforce_bitmap.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\esdt.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\img.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\../README.md
+
+C:\Users\Usuario\Projects\zubi\target\aarch64-linux-android\release\deps\libsdfer-8d8a341eb088f729.rmeta: C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\lib.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\bruteforce_bitmap.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\esdt.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\img.rs C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\../README.md
+
+C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\lib.rs:
+C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\bruteforce_bitmap.rs:
+C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\esdt.rs:
+C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\img.rs:
+C:\Users\Usuario\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\sdfer-0.2.1\src\../README.md:

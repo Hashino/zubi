@@ -4,14 +4,12 @@ on:
   push:
     branches:
       - main
-      - master
     paths:
       - 'passenger-app/**'
       - '.github/workflows/eas-build-passenger.yml'
   pull_request:
     branches:
       - main
-      - master
     paths:
       - 'passenger-app/**'
   workflow_dispatch:
@@ -70,7 +68,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.submit == 'true')
     defaults:
       run:

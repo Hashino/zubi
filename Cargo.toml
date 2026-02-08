@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "zubi_core",
+    "zubi_passenger",
+    "zubi_driver",
+]
+resolver = "2"

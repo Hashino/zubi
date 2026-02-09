@@ -1,0 +1,31 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#388E3C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="450" fill="url(#grad2)" stroke="white" stroke-width="8"/>
+  
+  <!-- Person icon -->
+  <circle cx="512" cy="320" r="60" fill="white"/>
+  <path d="M 412 420 Q 412 400 432 400 L 592 400 Q 612 400 612 420 L 612 500 Q 612 520 592 520 L 432 520 Q 412 520 412 500 Z" fill="white"/>
+  
+  <!-- Phone/App symbol -->
+  <rect x="450" y="580" width="124" height="200" rx="25" ry="25" fill="white"/>
+  <rect x="465" y="595" width="94" height="150" rx="10" ry="10" fill="#E8F5E8"/>
+  
+  <!-- Location pin -->
+  <path d="M 512 620 L 512 600 C 520 600 528 608 528 616 C 528 624 520 632 512 632 C 504 632 496 624 496 616 C 496 608 504 600 512 600 Z" fill="#4CAF50"/>
+  <circle cx="512" cy="616" r="6" fill="white"/>
+  
+  <!-- Search/Request lines -->
+  <rect x="475" y="660" width="74" height="4" rx="2" fill="#4CAF50"/>
+  <rect x="475" y="675" width="54" height="4" rx="2" fill="#4CAF50"/>
+  <rect x="475" y="690" width="64" height="4" rx="2" fill="#4CAF50"/>
+  
+  <!-- "Z" logo -->
+  <text x="512" y="280" font-family="Arial Black, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="white">Z</text>
+</svg>

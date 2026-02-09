@@ -11,6 +11,12 @@ import {
 import * as Location from 'expo-location';
 import { useDriver } from '../services/DriverService';
 
+// warn: No continuous location tracking while online
+// TODO: Implement background location updates
+// TODO: Add map view showing driver's current location
+// FIX: Add battery optimization handling
+// bug: Going offline doesn't clean up location watchers
+
 export default function OnlineScreen({ navigation }) {
   const {
     driverProfile,
@@ -30,6 +36,8 @@ export default function OnlineScreen({ navigation }) {
   }, []);
 
   const setupLocation = async () => {
+    // TODO: Request background location permission
+    // FIX: Add error recovery for denied permissions
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {

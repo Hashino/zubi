@@ -9,6 +9,10 @@ import {
   StatusBar
 } from 'react-native';
 
+// TODO: Add user authentication and profile management
+// TODO: Add wallet connection (MetaMask or WalletConnect)
+// FIX: Add loading states and error handling
+
 export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>

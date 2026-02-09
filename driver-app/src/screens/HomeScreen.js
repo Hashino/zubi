@@ -10,10 +10,18 @@ import {
 } from 'react-native';
 import { useDriver } from '../services/DriverService';
 
+// TODO: Add earnings history view
+// TODO: Implement profile editing
+// FIX: Add loading states for profile data
+// bug: XP progress bar can exceed 100% on high XP
+
 export default function HomeScreen({ navigation }) {
   const { driverProfile } = useDriver();
 
   const getLevelProgress = () => {
+    // bug: Next level XP thresholds are hardcoded and inconsistent
+    // TODO: Load XP thresholds from smart contract
+    // FIX: Handle edge case when XP exceeds maximum level
     const nextLevelXp = driverProfile.level === 'Iniciante' ? 500 : driverProfile.level === 'Intermediário' ? 1000 : 2000;
     return (driverProfile.xp / nextLevelXp) * 100;
   };

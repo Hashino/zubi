@@ -11,6 +11,12 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { useDriver } from '../services/DriverService';
 
+// TODO: Add navigation integration (Google Maps / Waze)
+// TODO: Implement real-time ETA updates
+// FIX: Add trip cancellation flow
+// warn: No validation counting mechanism - validationCount is never incremented
+// bug: QR code doesn't refresh periodically (security issue)
+
 export default function TripScreen({ navigation }) {
   const { activeTrip, driverProfile, generatePresenceQRCode, finishTrip } = useDriver();
   const [tripStatus, setTripStatus] = useState('going_to_passenger'); // going_to_passenger, in_progress, finishing
@@ -18,6 +24,8 @@ export default function TripScreen({ navigation }) {
   const [validationCount, setValidationCount] = useState(0);
 
   useEffect(() => {
+    // TODO: Regenerate QR code every 30 seconds for security
+    // FIX: Clean up interval on component unmount
     if (activeTrip) {
       const data = generatePresenceQRCode();
       setQrData(data);

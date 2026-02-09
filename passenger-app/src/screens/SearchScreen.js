@@ -12,6 +12,12 @@ import {
 import * as Location from 'expo-location';
 import { useP2P } from '../services/P2PService';
 
+// warn: No background location tracking
+// TODO: Add real-time driver location updates
+// TODO: Implement map view with driver pins
+// FIX: Add pull-to-refresh functionality
+// bug: Location permission is requested every time - should cache permission status
+
 export default function SearchScreen({ navigation }) {
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +28,8 @@ export default function SearchScreen({ navigation }) {
   }, []);
 
   const getLocationAndSearch = async () => {
+    // TODO: Add location caching to reduce API calls
+    // FIX: Handle location services disabled scenario
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -43,6 +51,9 @@ export default function SearchScreen({ navigation }) {
   };
 
   const handleSelectDriver = async (driver) => {
+    // TODO: Add driver profile view before confirming
+    // TODO: Implement fare estimation based on destination
+    // FIX: Add connection timeout handling
     Alert.alert(
       'Confirmar Solicitação',
       `Deseja solicitar viagem com ${driver.name}?\n\n` +

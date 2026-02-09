@@ -1,3 +1,23 @@
+/**
+ * P2P Service - Passenger App
+ * 
+ * Handles peer-to-peer networking for driver discovery and communication.
+ * 
+ * Current Status: MVP - Mock implementation
+ * Production TODO:
+ * - Replace with libp2p or Nostr for real P2P networking
+ * - Add cryptographic signatures for all communications
+ * - Implement blockchain integration for payments
+ * - Add offline message queuing
+ * - Implement proper error handling and retry logic
+ * 
+ * Security Warnings:
+ * - No encryption on messages
+ * - No signature verification
+ * - No replay attack protection
+ * - All data stored in memory only
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // TODO: Replace with real P2P networking
@@ -26,6 +46,8 @@ export const P2PProvider = ({ children }) => {
   const [connectedPeer, setConnectedPeer] = useState(null);
   const [messages, setMessages] = useState([]);
 
+  // warn: Mock implementation - replace with real P2P discovery
+  // TODO: Implement real peer discovery using libp2p DHT or Nostr
   // Simulação de descoberta de peers (motoristas disponíveis)
   const discoverPeers = (location) => {
     // Em produção, usar Nostr ou DHT para anunciar/descobrir peers
@@ -78,6 +100,9 @@ export const P2PProvider = ({ children }) => {
     return mockDrivers;
   };
 
+  // warn: No connection validation - accepts any peer ID
+  // TODO: Add peer identity verification with cryptographic signatures
+  // FIX: Add timeout for connection attempts
   // Conectar com um motorista específico
   const connectToPeer = async (peerId) => {
     const peer = peers.find(p => p.id === peerId);
@@ -88,6 +113,10 @@ export const P2PProvider = ({ children }) => {
     return false;
   };
 
+  // warn: No encryption on messages - plain text transmission
+  // TODO: Implement end-to-end encryption (Signal protocol or noise)
+  // FIX: Add message queue for offline scenarios
+  // bug: Messages are stored in memory only - lost on app restart
   // Enviar mensagem para peer conectado
   const sendMessage = (message) => {
     if (connectedPeer) {
@@ -111,6 +140,9 @@ export const P2PProvider = ({ children }) => {
   // 3. Include timestamp and nonce to prevent replay attacks
   // 4. Optionally include GPS coordinates for location validation
   // 5. Store validation on blockchain or distributed log
+  // warn: No signature verification - easily spoofable
+  // bug: No replay attack protection
+  // FIX: Add timestamp validation (reject QR codes older than 5 minutes)
   const validatePresence = (qrData) => {
     // Em produção, usar assinaturas criptográficas
     try {
@@ -142,6 +174,10 @@ export const P2PProvider = ({ children }) => {
   // 
   // Smart contract address: TBD
   // Network: Polygon Mumbai (testnet) / Polygon (mainnet)
+  // warn: No real blockchain integration - simulated only
+  // bug: No error handling for failed transactions
+  // FIX: Add retry logic for failed blockchain transactions
+  // FIX: Implement gas price estimation
   const finalizeTripPayment = async (tripData) => {
     // Em produção, interagir com smart contract
     const mockTransaction = {

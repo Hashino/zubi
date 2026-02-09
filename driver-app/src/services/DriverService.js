@@ -1,3 +1,23 @@
+/**
+ * Driver Service - Driver App
+ * 
+ * Manages driver profile, online status, trip requests, and earnings.
+ * 
+ * Current Status: MVP - Mock implementation
+ * Production TODO:
+ * - Integrate with real P2P network for trip requests
+ * - Add blockchain integration for payment processing
+ * - Implement secure profile storage
+ * - Add background location tracking
+ * - Implement proper state persistence
+ * 
+ * Security Warnings:
+ * - Profile data is hardcoded
+ * - No cryptographic signatures on QR codes
+ * - No blockchain integration
+ * - XP calculations are client-side only
+ */
+
 import React, { createContext, useContext, useState } from 'react';
 
 const DriverContext = createContext();
@@ -5,6 +25,9 @@ const DriverContext = createContext();
 export const useDriver = () => useContext(DriverContext);
 
 export const DriverProvider = ({ children }) => {
+  // warn: Hardcoded driver profile - should load from secure storage
+  // TODO: Implement profile persistence with encrypted storage
+  // FIX: Add profile validation and error handling
   const [driverProfile, setDriverProfile] = useState({
     id: 'driver1',
     name: 'João Silva',
@@ -22,6 +45,9 @@ export const DriverProvider = ({ children }) => {
   const [tripRequests, setTripRequests] = useState([]);
   const [activeTrip, setActiveTrip] = useState(null);
 
+  // warn: No real P2P announcement - simulated only
+  // TODO: Announce availability via Nostr relays or libp2p DHT
+  // FIX: Add periodic heartbeat to keep connection alive
   // Anunciar disponibilidade na rede P2P
   const goOnline = (location) => {
     setIsOnline(true);
@@ -31,10 +57,16 @@ export const DriverProvider = ({ children }) => {
   };
 
   const goOffline = () => {
+    // TODO: Send disconnect message to P2P network
+    // FIX: Reject pending trip requests before going offline
     setIsOnline(false);
     setTripRequests([]);
   };
 
+  // warn: Mock trip requests - not real P2P messages
+  // TODO: Listen for trip requests on P2P network
+  // bug: Fixed 5-second delay - should be event-driven
+  // FIX: Implement proper message queue and notification system
   // Simular recebimento de solicitações
   const startReceivingRequests = () => {
     // Simular chegada de solicitação após alguns segundos
@@ -61,6 +93,8 @@ export const DriverProvider = ({ children }) => {
     }, 5000);
   };
 
+  // TODO: Send accept message to passenger via P2P
+  // FIX: Add timeout for passenger confirmation
   // Aceitar solicitação de viagem
   const acceptTripRequest = (requestId) => {
     const request = tripRequests.find(r => r.id === requestId);
@@ -77,11 +111,15 @@ export const DriverProvider = ({ children }) => {
     return false;
   };
 
+  // TODO: Send rejection message to passenger
   // Rejeitar solicitação
   const rejectTripRequest = (requestId) => {
     setTripRequests(prev => prev.filter(r => r.id !== requestId));
   };
 
+  // warn: No cryptographic signature - QR is easily forgeable
+  // TODO: Sign QR data with driver's private key
+  // FIX: Add nonce and expiration timestamp
   // Gerar QR Code para validação de presença
   const generatePresenceQRCode = () => {
     if (activeTrip) {
@@ -94,6 +132,10 @@ export const DriverProvider = ({ children }) => {
     return null;
   };
 
+  // warn: No blockchain integration - simulated payment
+  // TODO: Call smart contract to process payment
+  // bug: XP level thresholds are hardcoded - should be on-chain
+  // FIX: Add transaction confirmation waiting
   // Finalizar viagem
   const finishTrip = async (tripData) => {
     // Em produção, assinar transação e enviar para blockchain

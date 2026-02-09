@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import OnlineScreen from './src/screens/OnlineScreen';
 import TripScreen from './src/screens/TripScreen';
@@ -13,7 +14,7 @@ export default function App() {
     <DriverProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Home"
+          initialRouteName="Splash"
           screenOptions={{
             headerStyle: {
               backgroundColor: '#2196F3',
@@ -24,6 +25,11 @@ export default function App() {
             },
           }}
         >
+          <Stack.Screen 
+            name="Splash" 
+            component={SplashScreen}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen 
             name="Home" 
             component={HomeScreen}

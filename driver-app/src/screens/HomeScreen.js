@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,24 +7,62 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
-  Animated
+  Animated,
+  Alert,
+  Switch,
+  Dimensions,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDriver } from '../services/DriverService';
 
-// TODO: Add earnings history view
-// TODO: Implement profile editing
-// FIX: Add loading states for profile data
-// bug: XP progress bar can exceed 100% on high XP
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const { driverProfile } = useDriver();
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const [darkMode, setDarkMode] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const recentTrips = [
+    { id: 1, date: '2024-02-08', destination: 'Shopping Center', earnings: 25.50, rating: 5 },
+    { id: 2, date: '2024-02-08', destination: 'Aeroporto Internacional', earnings: 45.00, rating: 5 },
+    { id: 3, date: '2024-02-07', destination: 'Universidade Federal', earnings: 18.75, rating: 4 },
+    { id: 4, date: '2024-02-07', destination: 'Centro da Cidade', earnings: 12.30, rating: 5 },
+    { id: 5, date: '2024-02-06', destination: 'Hospital Regional', earnings: 22.40, rating: 5 },
+  ];
+
+  const notifications = [
+    { id: 1, type: 'achievement', title: '🏆 Nova Conquista!', message: 'Você completou 100 viagens! Parabéns!', time: '2 min' },
+    { id: 2, type: 'system', title: '📱 Atualização Disponível', message: 'Nova versão do app disponível na Play Store', time: '1 hora' },
+    { id: 3, type: 'earnings', title: '💰 Ganhos da Semana', message: 'Você ganhou R$ 420,50 esta semana!', time: '3 horas' },
+    { id: 4, type: 'tip', title: '💡 Dica de Eficiência', message: 'Dirija nas horas de pico para maximizar ganhos', time: '1 dia' },
+  ];
+
+  useEffect(() => {
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+    
+    return () => pulseAnimation.stop();
+  }, []);
 
   const getLevelProgress = () => {
-    // bug: Next level XP thresholds are hardcoded and inconsistent
-    // TODO: Load XP thresholds from smart contract
-    // FIX: Handle edge case when XP exceeds maximum level
     const nextLevelXp = driverProfile.level === 'Iniciante' ? 500 : driverProfile.level === 'Intermediário' ? 1000 : 2000;
     return Math.min((driverProfile.xp / nextLevelXp) * 100, 100);
   };
@@ -39,6 +77,17 @@ export default function HomeScreen({ navigation }) {
 
   const getLevelEmoji = () => {
     return driverProfile.level === 'Veterano' ? '🥇' : driverProfile.level === 'Intermediário' ? '🥈' : '🥉';
+  };
+
+  const getMotivationalMessage = () => {
+    const messages = [
+      'Continue dirigindo com segurança! 🚗',
+      'Sua dedicação faz a diferença! 💪',
+      'Obrigado por ser parte da revolução! 🌟',
+      'Juntos construímos um futuro melhor! 🚀',
+      'Cada viagem te aproxima do próximo nível! ⭐',
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
   };
 
   const handlePressIn = () => {
@@ -57,12 +106,56 @@ export default function HomeScreen({ navigation }) {
     }).start();
   };
 
+  const renderTripItem = ({ item }) => (
+    <View style={styles.tripItem}>
+      <View style={styles.tripHeader}>
+        <Text style={styles.tripDate}>{item.date}</Text>
+        <Text style={styles.tripRating}>{'⭐'.repeat(item.rating)}</Text>
+      </View>
+      <Text style={styles.tripDestination}>{item.destination}</Text>
+      <Text style={styles.tripEarnings}>R$ {item.earnings.toFixed(2)}</Text>
+    </View>
+  );
+
+  const renderNotificationItem = ({ item }) => (
+    <View style={styles.notificationItem}>
+      <Text style={styles.notificationTitle}>{item.title}</Text>
+      <Text style={styles.notificationMessage}>{item.message}</Text>
+      <Text style={styles.notificationTime}>{item.time} atrás</Text>
+    </View>
+  );
+
+  const theme = darkMode ? darkTheme : lightTheme;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1976D2" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={theme.statusBar} />
+      
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => setShowNotifications(true)}
+        >
+          <Text style={styles.iconButtonText}>🔔</Text>
+          <View style={styles.notificationBadge}>
+            <Text style={styles.badgeText}>{notifications.length}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.darkModeToggle}>
+          <Text style={[styles.toggleLabel, { color: theme.text }]}>🌙</Text>
+          <Switch
+            value={darkMode}
+            onValueChange={setDarkMode}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          />
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient
-          colors={['#2196F3', '#1976D2', '#1565C0']}
+          colors={darkMode ? ['#1565C0', '#0D47A1', '#01579B'] : ['#2196F3', '#1976D2', '#1565C0']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.profileCard}
@@ -78,28 +171,39 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.progressText}>{getLevelProgress().toFixed(0)}% até o próximo nível</Text>
         </LinearGradient>
 
-        <View style={styles.statsCard}>
-          <View style={styles.statsHeader}>
-            <Text style={styles.cardIcon}>📊</Text>
-            <Text style={styles.cardTitle}>Estatísticas</Text>
+        <View style={styles.motivationCard}>
+          <Text style={styles.motivationText}>{getMotivationalMessage()}</Text>
+          <Text style={styles.motivationSubtext}>
+            Você está fazendo a diferença na mobilidade urbana!
+          </Text>
+        </View>
+
+        <View style={styles.statsGrid}>
+          <Animated.View style={[styles.statCard, { transform: [{ scale: pulseAnim }] }]}>
+            <Text style={styles.statEmoji}>🚗</Text>
+            <Text style={styles.statNumber}>{driverProfile.totalTrips}</Text>
+            <Text style={styles.statLabel}>Viagens</Text>
+          </Animated.View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>⭐</Text>
+            <Text style={styles.statNumber}>{driverProfile.rating}</Text>
+            <Text style={styles.statLabel}>Avaliação</Text>
           </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>🚗 Total de viagens:</Text>
-            <Text style={styles.statValue}>{driverProfile.totalTrips}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>⭐ Avaliação:</Text>
-            <Text style={styles.statValue}>{driverProfile.rating}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>💰 Ganhos totais:</Text>
-            <Text style={[styles.statValue, styles.earningsValue]}>R$ {driverProfile.totalEarnings.toFixed(2)}</Text>
-          </View>
-          <View style={styles.statRowHighlight}>
-            <Text style={styles.statLabelHighlight}>Taxa atual:</Text>
-            <Text style={styles.feeText}>{getFeePercentage()}</Text>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>💰</Text>
+            <Text style={styles.statNumber}>R$ {driverProfile.totalEarnings.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Ganhos</Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setShowHistory(true)}
+        >
+          <Text style={styles.historyButtonText}>📋 Ver Histórico de Viagens</Text>
+        </TouchableOpacity>
 
         <View style={styles.vehicleCard}>
           <View style={styles.statsHeader}>
@@ -108,17 +212,10 @@ export default function HomeScreen({ navigation }) {
           </View>
           <Text style={styles.vehicleInfo}>{driverProfile.vehicle}</Text>
           <Text style={styles.vehiclePlate}>Placa: {driverProfile.plate}</Text>
-        </View>
-
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>💡 Como funciona o Zubi?</Text>
-          <Text style={styles.infoText}>
-            • Conexão P2P direta com passageiros{'\n'}
-            • Pagamentos via smart contracts{'\n'}
-            • Taxas progressivas baseadas em XP{'\n'}
-            • Governança descentralizada{'\n'}
-            • Trabalho de oráculo para XP extra
-          </Text>
+          <View style={styles.feeInfo}>
+            <Text style={styles.feeLabel}>Taxa atual:</Text>
+            <Text style={styles.feeValue}>{getFeePercentage()}</Text>
+          </View>
         </View>
 
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -132,7 +229,7 @@ export default function HomeScreen({ navigation }) {
             }}
           >
             <LinearGradient
-              colors={['#4CAF50', '#45A049']}
+              colors={['#4CAF50', '#45A049', '#43A047']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.button}
@@ -141,21 +238,112 @@ export default function HomeScreen({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Protocolo de Mobilidade Cooperativa Descentralizada
-          </Text>
-        </View>
       </ScrollView>
+
+      {/* History Modal */}
+      <Modal
+        visible={showHistory}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📋 Histórico de Viagens</Text>
+              <TouchableOpacity onPress={() => setShowHistory(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={recentTrips}
+              renderItem={renderTripItem}
+              keyExtractor={item => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Notifications Modal */}
+      <Modal
+        visible={showNotifications}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>🔔 Notificações</Text>
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={notifications}
+              renderItem={renderNotificationItem}
+              keyExtractor={item => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+const lightTheme = {
+  background: '#f5f5f5',
+  text: '#333',
+  statusBar: '#1976D2',
+};
+
+const darkTheme = {
+  background: '#121212',
+  text: '#fff',
+  statusBar: '#000',
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  iconButton: {
+    position: 'relative',
+    padding: 8,
+  },
+  iconButtonText: {
+    fontSize: 24,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#FF5722',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  darkModeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    fontSize: 18,
+    marginRight: 8,
   },
   content: {
     flexGrow: 1,
@@ -218,18 +406,72 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  statsCard: {
-    backgroundColor: '#fff',
+  motivationCard: {
+    backgroundColor: '#FFF3E0',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  motivationText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FF6F00',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  motivationSubtext: {
+    fontSize: 13,
+    color: '#EF6C00',
+    textAlign: 'center',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    width: (width - 60) / 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
+  },
+  statEmoji: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  historyButton: {
+    backgroundColor: '#E3F2FD',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  historyButtonText: {
+    color: '#1976D2',
+    fontSize: 16,
+    fontWeight: '600',
   },
   vehicleCard: {
     backgroundColor: '#fff',
@@ -260,45 +502,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  statRowHighlight: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 2,
-    borderTopColor: '#4CAF50',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  statLabelHighlight: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  earningsValue: {
-    color: '#4CAF50',
-    fontSize: 16,
-  },
-  feeText: {
-    color: '#4CAF50',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
   vehicleInfo: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -314,25 +517,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
     marginTop: 8,
-  },
-  infoCard: {
-    backgroundColor: '#E3F2FD',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#BBDEFB',
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1976D2',
     marginBottom: 12,
   },
-  infoText: {
-    fontSize: 13,
-    color: '#1565C0',
-    lineHeight: 22,
+  feeInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 2,
+    borderTopColor: '#4CAF50',
+  },
+  feeLabel: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  feeValue: {
+    color: '#4CAF50',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   button: {
     borderRadius: 16,
@@ -350,14 +553,91 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
-  footer: {
-    marginTop: 40,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    opacity: 0.7,
   },
-  footerText: {
-    fontSize: 11,
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#666',
+    padding: 5,
+  },
+  tripItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  tripHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tripDate: {
+    fontSize: 12,
+    color: '#666',
+  },
+  tripRating: {
+    fontSize: 12,
+  },
+  tripDestination: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  tripEarnings: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  notificationItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  notificationMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  notificationTime: {
+    fontSize: 12,
     color: '#999',
-    textAlign: 'center',
   },
 });

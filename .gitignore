@@ -40,3 +40,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.json
+zubi-play-store-publisher-*.json

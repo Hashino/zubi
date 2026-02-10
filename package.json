@@ -8,6 +8,10 @@
     "start:driver": "cd driver-app && npm start",
     "build:passenger": "cd passenger-app && eas build --platform android --profile production",
     "build:driver": "cd driver-app && eas build --platform android --profile production",
+    "build:local:passenger": "./scripts/build-and-submit.sh passenger",
+    "build:local:driver": "./scripts/build-and-submit.sh driver",
+    "version:passenger": "node scripts/increment-version.js passenger",
+    "version:driver": "node scripts/increment-version.js driver",
     "install:all": "npm install && cd passenger-app && npm install && cd ../driver-app && npm install"
   },
   "keywords": ["zubi", "p2p", "mobility", "blockchain"],

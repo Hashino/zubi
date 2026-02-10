@@ -21,6 +21,13 @@
         "buildType": "app-bundle"
       },
       "autoIncrement": true
+    },
+    "production-local": {
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "distribution": "internal"
     }
   },
   "submit": {

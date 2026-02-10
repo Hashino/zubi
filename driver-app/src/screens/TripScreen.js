@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ScrollView
+  ScrollView,
+  Modal
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useDriver } from '../services/DriverService';
+import ChatComponent from '../shared/components/ChatComponent';
 
 // TODO: Add navigation integration (Google Maps / Waze)
 // TODO: Implement real-time ETA updates
@@ -22,6 +24,7 @@ export default function TripScreen({ navigation }) {
   const [tripStatus, setTripStatus] = useState('going_to_passenger'); // going_to_passenger, in_progress, finishing
   const [qrData, setQrData] = useState(null);
   const [validationCount, setValidationCount] = useState(0);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     // TODO: Regenerate QR code every 30 seconds for security
@@ -189,6 +192,15 @@ export default function TripScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
+        {tripStatus !== 'finishing' && (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => setShowChat(true)}
+          >
+            <Text style={styles.chatButtonText}>💬 Chat com Passageiro</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>💡 Importante</Text>
           <Text style={styles.infoText}>
@@ -199,6 +211,19 @@ export default function TripScreen({ navigation }) {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showChat}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ChatComponent
+          tripId={activeTrip?.tripId}
+          userType="driver"
+          userName={driverProfile.name}
+          onClose={() => setShowChat(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -364,6 +389,18 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  chatButton: {
+    backgroundColor: '#9C27B0',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonText: {
     color: '#fff',

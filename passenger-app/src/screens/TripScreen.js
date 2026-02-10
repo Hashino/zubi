@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ScrollView
+  ScrollView,
+  Modal
 } from 'react-native';
 import { useP2P } from '../services/P2PService';
+import ChatComponent from '../shared/components/ChatComponent';
 
 // TODO: Re-implement QR code scanning for presence validation
 // The Camera component was removed to fix build issues
@@ -30,6 +32,7 @@ export default function TripScreen({ route, navigation }) {
   const [tripStatus, setTripStatus] = useState('waiting'); // waiting, ongoing, validating, completed
   const [validations, setValidations] = useState([]);
   const [fare] = useState((Math.random() * 20 + 10).toFixed(2)); // Mock fare
+  const [showChat, setShowChat] = useState(false);
 
   const handleStartTrip = () => {
     setTripStatus('ongoing');
@@ -198,6 +201,13 @@ export default function TripScreen({ route, navigation }) {
             >
               <Text style={styles.secondaryButtonText}>Finalizar Viagem</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.chatButton}
+              onPress={() => setShowChat(true)}
+            >
+              <Text style={styles.chatButtonText}>💬 Chat com Motorista</Text>
+            </TouchableOpacity>
           </>
         )}
 
@@ -211,6 +221,19 @@ export default function TripScreen({ route, navigation }) {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showChat}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ChatComponent
+          tripId={tripId}
+          userType="passenger"
+          userName="Passageiro"
+          onClose={() => setShowChat(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -323,6 +346,18 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  chatButton: {
+    backgroundColor: '#9C27B0',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chatButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },

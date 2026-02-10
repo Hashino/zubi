@@ -23,6 +23,7 @@ export default function HomeScreen({ navigation }) {
   const [darkMode, setDarkMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showCoupons, setShowCoupons] = useState(false);
   const [favorites, setFavorites] = useState([
     { id: 1, name: 'Casa', address: 'Rua das Flores, 123', icon: '🏠' },
     { id: 2, name: 'Trabalho', address: 'Av. Paulista, 1000', icon: '🏢' },
@@ -47,6 +48,16 @@ export default function HomeScreen({ navigation }) {
   ];
 
   const [currentTip, setCurrentTip] = useState(0);
+
+  const coupons = [
+    { id: 1, code: 'WELCOME20', discount: '20%', description: 'Desconto para novos usuários', valid: true, expiry: '2024-03-01' },
+    { id: 2, code: 'WEEKEND15', discount: '15%', description: 'Viagens de fim de semana', valid: true, expiry: '2024-02-25' },
+    { id: 3, code: 'VETERAN10', discount: '10%', description: 'Viagens com motoristas veteranos', valid: true, expiry: '2024-02-20' },
+    { id: 4, code: 'USED50', discount: 'R$ 5,00', description: 'Primeiro desconto usado', valid: false, expiry: '2024-02-10' },
+    { id: 5, code: 'LOYAL25', discount: '25%', description: 'Fidelidade - 10+ viagens', valid: true, expiry: '2024-03-15' },
+  ];
+
+  const getValidCoupons = () => coupons.filter(c => c.valid).length;
 
   useEffect(() => {
     const tipInterval = setInterval(() => {
@@ -136,6 +147,32 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
+  const renderCouponItem = ({ item }) => (
+    <View style={[styles.couponItem, !item.valid && styles.usedCoupon]}>
+      <View style={styles.couponHeader}>
+        <View style={styles.couponLeft}>
+          <Text style={[styles.couponCode, !item.valid && styles.usedCouponText]}>{item.code}</Text>
+          <Text style={[styles.couponDiscount, !item.valid && styles.usedCouponText]}>{item.discount}</Text>
+        </View>
+        <View style={styles.couponRight}>
+          <Text style={[styles.couponStatus, item.valid ? styles.validStatus : styles.usedStatus]}>
+            {item.valid ? '✅ Válido' : '❌ Usado'}
+          </Text>
+        </View>
+      </View>
+      <Text style={[styles.couponDescription, !item.valid && styles.usedCouponText]}>{item.description}</Text>
+      <Text style={styles.couponExpiry}>Válido até: {item.expiry}</Text>
+      {item.valid && (
+        <TouchableOpacity 
+          style={styles.useCouponButton}
+          onPress={() => Alert.alert('Cupom Aplicado!', `Cupom ${item.code} será usado na próxima viagem.`)}
+        >
+          <Text style={styles.useCouponText}>Usar Cupom</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   const theme = darkMode ? darkTheme : lightTheme;
 
   return (
@@ -157,137 +194,38 @@ export default function HomeScreen({ navigation }) {
             onValueChange={setDarkMode}
             trackColor={{ false: '#767577', true: '#81b0ff' }}
             thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
-          />
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <LinearGradient
-          colors={darkMode ? ['#2E7D32', '#1B5E20', '#0F4C1C'] : ['#4CAF50', '#388E3C', '#2E7D32']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
-          <Text style={styles.logoEmoji}>🚗</Text>
-          <Text style={styles.title}>Zubi Passageiro</Text>
-          <Text style={styles.subtitle}>
-            Sua próxima viagem começa aqui
-          </Text>
-        </LinearGradient>
-
-        <Animated.View style={[styles.tipCard, { transform: [{ scale: pulseAnim }] }]}>
-          <Text style={styles.tipText}>{tips[currentTip]}</Text>
-        </Animated.View>
-
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => setShowFavorites(true)}
-          >
-            <Text style={styles.actionEmoji}>⭐</Text>
-            <Text style={styles.actionLabel}>Favoritos</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => setShowHistory(true)}
-          >
-            <Text style={styles.actionEmoji}>📋</Text>
-            <Text style={styles.actionLabel}>Histórico</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => Alert.alert('Em breve', 'Promoções em desenvolvimento!')}
-          >
-            <Text style={styles.actionEmoji}>🎁</Text>
-            <Text style={styles.actionLabel}>Promoções</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.benefitsCard}>
-          <View style={styles.iconHeader}>
-            <Text style={styles.cardIcon}>🚀</Text>
-            <Text style={styles.infoTitle}>Por que escolher o Zubi?</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>💰</Text>
-            <Text style={styles.benefitText}>Preços até 40% menores que apps tradicionais</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🔒</Text>
-            <Text style={styles.benefitText}>Pagamentos seguros via blockchain</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>⚡</Text>
-            <Text style={styles.benefitText}>Conexão direta e instantânea</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🌱</Text>
-            <Text style={styles.benefitText}>Economia colaborativa sustentável</Text>
+            />
           </View>
         </View>
+      </Modal>
 
-        <View style={styles.infoCard}>
-          <View style={styles.iconHeader}>
-            <Text style={styles.cardIcon}>💰</Text>
-            <Text style={styles.infoTitle}>Taxas por nível do motorista</Text>
-          </View>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLevel}>🥉 Iniciante (0-500 XP)</Text>
-            <Text style={styles.feePercent}>15%</Text>
-          </View>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLevel}>🥈 Intermediário (500-1000 XP)</Text>
-            <Text style={styles.feePercent}>10%</Text>
-          </View>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLevel}>🥇 Veterano (1000+ XP)</Text>
-            <Text style={[styles.feePercent, styles.feeHighlight]}>5%</Text>
-          </View>
-        </View>
-
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={() => {
-              handlePressOut();
-              navigation.navigate('Search');
-            }}
-          >
-            <LinearGradient
-              colors={['#4CAF50', '#45A049', '#43A047']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.button}
-            >
-              <Text style={styles.buttonText}>🔍 Buscar Motorista</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-      </ScrollView>
-
-      {/* History Modal */}
+      {/* Coupons Modal */}
       <Modal
-        visible={showHistory}
+        visible={showCoupons}
         animationType="slide"
         transparent={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>📋 Histórico de Viagens</Text>
-              <TouchableOpacity onPress={() => setShowHistory(false)}>
+              <Text style={styles.modalTitle}>🎁 Seus Cupons</Text>
+              <TouchableOpacity onPress={() => setShowCoupons(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
+            
+            <View style={styles.couponStats}>
+              <Text style={styles.statsText}>
+                Você tem {getValidCoupons()} cupons válidos
+              </Text>
+            </View>
+
             <FlatList
-              data={recentTrips}
-              renderItem={renderTripItem}
+              data={coupons}
+              renderItem={renderCouponItem}
               keyExtractor={item => item.id.toString()}
               showsVerticalScrollIndicator={false}
+              style={styles.couponsList}
             />
           </View>
         </View>
@@ -682,6 +620,93 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   favoriteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  couponStats: {
+    backgroundColor: '#E8F5E9',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  statsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  couponsList: {
+    maxHeight: 400,
+  },
+  couponItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  usedCoupon: {
+    backgroundColor: '#f5f5f5',
+    borderLeftColor: '#ccc',
+    opacity: 0.7,
+  },
+  couponHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  couponLeft: {
+    flex: 1,
+  },
+  couponCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    fontFamily: 'monospace',
+  },
+  couponDiscount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginTop: 2,
+  },
+  usedCouponText: {
+    color: '#999',
+  },
+  couponRight: {
+    alignItems: 'flex-end',
+  },
+  couponStatus: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  validStatus: {
+    color: '#4CAF50',
+  },
+  usedStatus: {
+    color: '#999',
+  },
+  couponDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  couponExpiry: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 8,
+  },
+  useCouponButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  useCouponText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,

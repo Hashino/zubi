@@ -24,6 +24,22 @@ export default function HomeScreen({ navigation }) {
   const [darkMode, setDarkMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const achievements = [
+    { id: 1, title: '🚗 Primeiro Passageiro', description: 'Complete sua primeira viagem', completed: true, date: '2024-01-15' },
+    { id: 2, title: '🔥 Série de 10', description: '10 viagens consecutivas com 5 estrelas', completed: true, date: '2024-01-20' },
+    { id: 3, title: '💯 Century Club', description: 'Complete 100 viagens', completed: true, date: '2024-02-01' },
+    { id: 4, title: '⚡ Flash Speed', description: 'Complete 5 viagens em uma hora', completed: true, date: '2024-02-05' },
+    { id: 5, title: '🏆 Elite Driver', description: 'Mantenha 4.8+ de avaliação por 30 dias', completed: true, date: '2024-02-07' },
+    { id: 6, title: '💎 Diamond Status', description: 'Complete 500 viagens (Progress: 427/500)', completed: false, progress: 85.4 },
+    { id: 7, title: '🌟 Perfect Week', description: 'Complete uma semana com 100% de avaliações 5 estrelas', completed: false },
+    { id: 8, title: '🎯 Precisão Master', description: 'Complete 20 viagens sem cancelamentos', completed: false, progress: 60 },
+  ];
+
+  const getCompletedAchievements = () => achievements.filter(a => a.completed).length;
+  const getTotalAchievements = () => achievements.length;
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -36,10 +52,12 @@ export default function HomeScreen({ navigation }) {
   ];
 
   const notifications = [
-    { id: 1, type: 'achievement', title: '🏆 Nova Conquista!', message: 'Você completou 100 viagens! Parabéns!', time: '2 min' },
-    { id: 2, type: 'system', title: '📱 Atualização Disponível', message: 'Nova versão do app disponível na Play Store', time: '1 hora' },
-    { id: 3, type: 'earnings', title: '💰 Ganhos da Semana', message: 'Você ganhou R$ 420,50 esta semana!', time: '3 horas' },
-    { id: 4, type: 'tip', title: '💡 Dica de Eficiência', message: 'Dirija nas horas de pico para maximizar ganhos', time: '1 dia' },
+    { id: 1, type: 'achievement', title: '🏆 Nova Conquista!', message: 'Você completou 100 viagens! Parabéns!', time: '2 min', unread: true },
+    { id: 2, type: 'system', title: '📱 Atualização Disponível', message: 'Nova versão do app disponível na Play Store', time: '1 hora', unread: true },
+    { id: 3, type: 'earnings', title: '💰 Ganhos da Semana', message: 'Você ganhou R$ 420,50 esta semana!', time: '3 horas', unread: false },
+    { id: 4, type: 'tip', title: '💡 Dica de Eficiência', message: 'Dirija nas horas de pico para maximizar ganhos', time: '1 dia', unread: false },
+    { id: 5, type: 'promotion', title: '🎁 Oferta Especial', message: 'Ganhe bônus de 20% em viagens hoje!', time: '30 min', unread: true },
+    { id: 6, type: 'achievement', title: '⭐ 5 Estrelas!', message: 'Sua avaliação média subiu para 4.8!', time: '2 horas', unread: true },
   ];
 
   useEffect(() => {
@@ -118,10 +136,32 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderNotificationItem = ({ item }) => (
-    <View style={styles.notificationItem}>
-      <Text style={styles.notificationTitle}>{item.title}</Text>
+    <View style={[styles.notificationItem, item.unread && styles.unreadNotification]}>
+      <View style={styles.notificationHeader}>
+        <Text style={styles.notificationTitle}>{item.title}</Text>
+        {item.unread && <View style={styles.unreadBadge} />}
+      </View>
       <Text style={styles.notificationMessage}>{item.message}</Text>
       <Text style={styles.notificationTime}>{item.time} atrás</Text>
+    </View>
+  );
+
+  const renderAchievementItem = ({ item }) => (
+    <View style={[styles.achievementItem, item.completed && styles.completedAchievement]}>
+      <View style={styles.achievementHeader}>
+        <Text style={[styles.achievementTitle, item.completed && styles.completedTitle]}>{item.title}</Text>
+        {item.completed && <Text style={styles.completedIcon}>✅</Text>}
+      </View>
+      <Text style={styles.achievementDescription}>{item.description}</Text>
+      {item.progress && !item.completed && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{item.progress.toFixed(0)}%</Text>
+        </View>
+      )}
+      {item.date && <Text style={styles.achievementDate}>Conquistado em {item.date}</Text>}
     </View>
   );
 
@@ -137,9 +177,11 @@ export default function HomeScreen({ navigation }) {
           onPress={() => setShowNotifications(true)}
         >
           <Text style={styles.iconButtonText}>🔔</Text>
-          <View style={styles.notificationBadge}>
-            <Text style={styles.badgeText}>{notifications.length}</Text>
-          </View>
+          {unreadNotifications > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.badgeText}>{unreadNotifications}</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <View style={styles.darkModeToggle}>
@@ -203,6 +245,15 @@ export default function HomeScreen({ navigation }) {
           onPress={() => setShowHistory(true)}
         >
           <Text style={styles.historyButtonText}>📋 Ver Histórico de Viagens</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.achievementsButton}
+          onPress={() => setShowAchievements(true)}
+        >
+          <Text style={styles.achievementsButtonText}>
+            🏆 Conquistas ({getCompletedAchievements()}/{getTotalAchievements()})
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.vehicleCard}>
@@ -274,13 +325,50 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>🔔 Notificações</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowNotifications(false);
+                  setUnreadNotifications(0);
+                }}
+              >
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
             <FlatList
               data={notifications}
               renderItem={renderNotificationItem}
+              keyExtractor={item => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Achievements Modal */}
+      <Modal
+        visible={showAchievements}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>🏆 Suas Conquistas</Text>
+              <TouchableOpacity onPress={() => setShowAchievements(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.achievementStats}>
+              <Text style={styles.statsText}>
+                Progresso: {getCompletedAchievements()}/{getTotalAchievements()} conquistas
+              </Text>
+              <View style={styles.statsProgressBar}>
+                <View style={[styles.statsProgressFill, { width: `${(getCompletedAchievements() / getTotalAchievements()) * 100}%` }]} />
+              </View>
+            </View>
+            <FlatList
+              data={achievements}
+              renderItem={renderAchievementItem}
               keyExtractor={item => item.id.toString()}
               showsVerticalScrollIndicator={false}
             />
@@ -473,6 +561,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  achievementsButton: {
+    backgroundColor: '#FFF3E0',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  achievementsButtonText: {
+    color: '#FF6F00',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   vehicleCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -639,5 +741,109 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: '#999',
+  },
+  unreadNotification: {
+    borderLeftColor: '#FF5722',
+    backgroundColor: '#FFF3E0',
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  unreadBadge: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF5722',
+  },
+  achievementStats: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  statsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  statsProgressBar: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  statsProgressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 4,
+  },
+  achievementItem: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ddd',
+  },
+  completedAchievement: {
+    borderLeftColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  achievementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  achievementTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666',
+    flex: 1,
+  },
+  completedTitle: {
+    color: '#2E7D32',
+  },
+  completedIcon: {
+    fontSize: 16,
+  },
+  achievementDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#2196F3',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  achievementDate: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontStyle: 'italic',
   },
 });

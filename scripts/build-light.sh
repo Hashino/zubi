@@ -39,12 +39,12 @@ build_app() {
     if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
         echo "✅ $app_name build successful!"
         
-        # Copia APK
-        mkdir -p ~/zubi-builds-new
+        # Copia APK para diretório unificado
+        mkdir -p ~/zubi-builds
         cp app/build/outputs/apk/release/app-release.apk \
-           ~/zubi-builds-new/zubi-${app_name}-app.apk
+           ~/zubi-builds/zubi-${app_name}-app.apk
         
-        ls -lh ~/zubi-builds-new/zubi-${app_name}-app.apk
+        ls -lh ~/zubi-builds/zubi-${app_name}-app.apk
     else
         echo "❌ $app_name build failed!"
         tail -50 "/tmp/${app_name}-build.log"
@@ -64,5 +64,5 @@ fi
 
 echo ""
 echo "🎉 Build completo!"
-echo "APKs disponíveis em: ~/zubi-builds-new/"
-ls -lh ~/zubi-builds-new/
+echo "APKs disponíveis em: ~/zubi-builds/"
+ls -lh ~/zubi-builds/

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useDriver } from '../services/DriverService';
+import { useApp } from '../../../shared/contexts/AppContext';
 import ChatComponent from '../../shared/components/ChatComponent';
 
 // TODO: Add navigation integration (Google Maps / Waze)
@@ -20,7 +21,9 @@ import ChatComponent from '../../shared/components/ChatComponent';
 // bug: QR code doesn't refresh periodically (security issue)
 
 export default function TripScreen({ navigation }) {
-  const { activeTrip, driverProfile, generatePresenceQRCode, finishTrip } = useDriver();
+  const { driverProfile, generatePresenceQRCode } = useDriver();
+  const { activeRide, completeRide } = useApp();
+  
   const [tripStatus, setTripStatus] = useState('going_to_passenger'); // going_to_passenger, in_progress, finishing
   const [qrData, setQrData] = useState(null);
   const [validationCount, setValidationCount] = useState(0);
@@ -29,11 +32,11 @@ export default function TripScreen({ navigation }) {
   useEffect(() => {
     // TODO: Regenerate QR code every 30 seconds for security
     // FIX: Clean up interval on component unmount
-    if (activeTrip) {
+    if (activeRide) {
       const data = generatePresenceQRCode();
       setQrData(data);
     }
-  }, [activeTrip]);
+  }, [activeRide]);
 
   const handleStartTrip = () => {
     Alert.alert(
@@ -56,29 +59,34 @@ export default function TripScreen({ navigation }) {
   };
 
   const handleFinishTrip = () => {
+    if (!activeRide) return;
+    
     Alert.alert(
       'Finalizar Viagem',
-      `Confirma que chegou ao destino?\n\nValor: R$ ${activeTrip.estimatedFare}\nValidações: ${validationCount}`,
+      `Confirma que chegou ao destino?\n\nValor: R$ ${activeRide.estimatedFare?.toFixed(2)}\nValidações: ${validationCount}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
           onPress: async () => {
             setTripStatus('finishing');
-            const result = await finishTrip({
-              tripId: activeTrip.tripId,
-              fare: activeTrip.estimatedFare,
-              validations: validationCount
-            });
+            
+            try {
+              await completeRide(activeRide.id);
+              
+              // Calculate earnings
+              const feePercent = driverProfile.level === 'Veterano' ? 0.05 : 
+                                driverProfile.level === 'Intermediário' ? 0.10 : 0.15;
+              const fee = activeRide.estimatedFare * feePercent;
+              const earning = activeRide.estimatedFare - fee;
 
-            if (result.success) {
               Alert.alert(
                 'Viagem Finalizada',
                 `Pagamento recebido!\n\n` +
-                `Valor bruto: R$ ${activeTrip.estimatedFare}\n` +
-                `Taxa: R$ ${result.fee.toFixed(2)}\n` +
-                `Seu ganho: R$ ${result.earning.toFixed(2)}\n\n` +
-                `+10 XP ganhos!\nXP total: ${result.newXp}`,
+                `Valor bruto: R$ ${activeRide.estimatedFare.toFixed(2)}\n` +
+                `Taxa (${(feePercent * 100).toFixed(0)}%): R$ ${fee.toFixed(2)}\n` +
+                `Seu ganho: R$ ${earning.toFixed(2)}\n\n` +
+                `+10 XP ganhos!`,
                 [
                   {
                     text: 'OK',
@@ -86,6 +94,9 @@ export default function TripScreen({ navigation }) {
                   }
                 ]
               );
+            } catch (error) {
+              Alert.alert('Erro', 'Falha ao finalizar viagem');
+              setTripStatus('in_progress');
             }
           }
         }
@@ -93,7 +104,7 @@ export default function TripScreen({ navigation }) {
     );
   };
 
-  if (!activeTrip) {
+  if (!activeRide) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
@@ -122,8 +133,8 @@ export default function TripScreen({ navigation }) {
 
         <View style={styles.passengerCard}>
           <Text style={styles.cardTitle}>Passageiro</Text>
-          <Text style={styles.passengerName}>{activeTrip.passengerName}</Text>
-          <Text style={styles.passengerRating}>⭐ {activeTrip.passengerRating}</Text>
+          <Text style={styles.passengerName}>{activeRide.passengerName || 'Passageiro'}</Text>
+          <Text style={styles.passengerRating}>⭐ {activeRide.passengerRating || '5.0'}</Text>
         </View>
 
         <View style={styles.tripCard}>
@@ -131,30 +142,30 @@ export default function TripScreen({ navigation }) {
           
           <View style={styles.locationInfo}>
             <Text style={styles.locationLabel}>📍 Origem</Text>
-            <Text style={styles.locationAddress}>{activeTrip.origin.address}</Text>
+            <Text style={styles.locationAddress}>{activeRide.origin?.address || 'Origem'}</Text>
           </View>
 
           <View style={styles.locationInfo}>
             <Text style={styles.locationLabel}>🎯 Destino</Text>
-            <Text style={styles.locationAddress}>{activeTrip.destination.address}</Text>
+            <Text style={styles.locationAddress}>{activeRide.destination?.address || 'Destino'}</Text>
           </View>
 
           <View style={styles.fareInfo}>
             <Text style={styles.fareLabel}>Valor:</Text>
-            <Text style={styles.fareValue}>R$ {activeTrip.estimatedFare}</Text>
+            <Text style={styles.fareValue}>R$ {activeRide.estimatedFare?.toFixed(2)}</Text>
           </View>
 
           <View style={styles.feeInfo}>
             <Text style={styles.feeLabel}>Taxa ({driverProfile.level === 'Veterano' ? '5%' : driverProfile.level === 'Intermediário' ? '10%' : '15%'}):</Text>
             <Text style={styles.feeValue}>
-              R$ {(parseFloat(activeTrip.estimatedFare) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15)).toFixed(2)}
+              R$ {(parseFloat(activeRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15)).toFixed(2)}
             </Text>
           </View>
 
           <View style={styles.earningInfo}>
             <Text style={styles.earningLabel}>Seu ganho:</Text>
             <Text style={styles.earningValue}>
-              R$ {(parseFloat(activeTrip.estimatedFare) - (parseFloat(activeTrip.estimatedFare) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15))).toFixed(2)}
+              R$ {(parseFloat(activeRide.estimatedFare || 0) - (parseFloat(activeRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15))).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -218,7 +229,7 @@ export default function TripScreen({ navigation }) {
         presentationStyle="pageSheet"
       >
         <ChatComponent
-          tripId={activeTrip?.tripId}
+          tripId={activeRide?.id}
           userType="driver"
           userName={driverProfile.name}
           onClose={() => setShowChat(false)}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Modal
 } from 'react-native';
 import { useP2P } from '../services/P2PService';
+import { useApp } from '../../../shared/contexts/AppContext';
 import ChatComponent from '../../shared/components/ChatComponent';
 
 // TODO: Re-implement QR code scanning for presence validation
@@ -27,11 +28,15 @@ import ChatComponent from '../../shared/components/ChatComponent';
 // Current MVP: Uses simulated validation (button click)
 
 export default function TripScreen({ route, navigation }) {
-  const { driver, tripId } = route.params;
-  const { validatePresence, finalizeTripPayment, disconnect } = useP2P();
+  const { ride } = route.params || {};
+  const { activeRide, completeRide } = useApp();
+  const { validatePresence, disconnect } = useP2P();
+  
+  // Use activeRide from context if available, otherwise use route params
+  const currentRide = activeRide || ride;
+  
   const [tripStatus, setTripStatus] = useState('waiting'); // waiting, ongoing, validating, completed
   const [validations, setValidations] = useState([]);
-  const [fare] = useState((Math.random() * 20 + 10).toFixed(2)); // Mock fare
   const [showChat, setShowChat] = useState(false);
 
   const handleStartTrip = () => {
@@ -46,9 +51,11 @@ export default function TripScreen({ route, navigation }) {
     // MVP: Simular validação sem scanner real
     // TODO: Replace with actual QR code scanning
     // See implementation notes at top of file
+    if (!currentRide) return;
+    
     const mockQRData = JSON.stringify({
-      driverId: driver.id,
-      tripId: tripId,
+      driverId: currentRide.driverId,
+      tripId: currentRide.id,
       timestamp: Date.now()
     });
     
@@ -79,43 +86,25 @@ export default function TripScreen({ route, navigation }) {
   };
 
   const processFinishTrip = async () => {
+    if (!currentRide) return;
+    
     setTripStatus('validating');
 
     try {
-      const result = await finalizeTripPayment({
-        tripId,
-        driverId: driver.id,
-        fare: parseFloat(fare),
-        validations
-      });
-
-      if (result.success) {
-        setTripStatus('completed');
-        Alert.alert(
-          'Viagem Finalizada',
-          `Pagamento processado com sucesso!\n\n` +
-          `Valor: R$ ${fare}\n` +
-          `Taxa (${driver.level === 'Veterano' ? '5%' : driver.level === 'Intermediário' ? '10%' : '15%'}): R$ ${result.transaction.fee.toFixed(2)}\n` +
-          `Total: R$ ${(parseFloat(fare) + result.transaction.fee).toFixed(2)}\n\n` +
-          `TX Hash: ${result.blockchainTxHash.substring(0, 20)}...`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                disconnect();
-                navigation.navigate('Home');
-              }
-            }
-          ]
-        );
-      }
+      // Complete ride in AppContext
+      await completeRide(currentRide.id);
+      
+      setTripStatus('completed');
+      
+      // Navigate to payment screen
+      navigation.navigate('Payment', { ride: currentRide });
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao processar pagamento');
+      Alert.alert('Erro', 'Falha ao finalizar viagem');
       setTripStatus('ongoing');
     }
   };
 
-  if (!driver) {
+  if (!currentRide) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
@@ -145,12 +134,12 @@ export default function TripScreen({ route, navigation }) {
 
         <View style={styles.driverCard}>
           <Text style={styles.cardTitle}>Motorista</Text>
-          <Text style={styles.driverName}>{driver.name}</Text>
-          <Text style={styles.driverInfo}>{driver.vehicle}</Text>
-          <Text style={styles.driverInfo}>Placa: {driver.plate}</Text>
+          <Text style={styles.driverName}>{currentRide.driverName || 'Motorista'}</Text>
+          <Text style={styles.driverInfo}>{currentRide.driverVehicle || 'Veículo'}</Text>
+          <Text style={styles.driverInfo}>Placa: {currentRide.driverPlate || 'XXX-0000'}</Text>
           <View style={styles.driverBadge}>
             <Text style={styles.badgeText}>
-              {driver.level} • {driver.xp} XP • ⭐ {driver.rating}
+              {currentRide.driverLevel || 'Intermediário'} • ⭐ {currentRide.driverRating || '5.0'}
             </Text>
           </View>
         </View>
@@ -159,17 +148,15 @@ export default function TripScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Informações da Viagem</Text>
           <View style={styles.tripInfo}>
             <Text style={styles.label}>ID da Viagem:</Text>
-            <Text style={styles.value}>{tripId}</Text>
+            <Text style={styles.value}>{currentRide.id}</Text>
           </View>
           <View style={styles.tripInfo}>
             <Text style={styles.label}>Valor estimado:</Text>
-            <Text style={styles.value}>R$ {fare}</Text>
+            <Text style={styles.value}>R$ {currentRide.estimatedFare?.toFixed(2)}</Text>
           </View>
           <View style={styles.tripInfo}>
-            <Text style={styles.label}>Taxa ({driver.level === 'Veterano' ? '5%' : driver.level === 'Intermediário' ? '10%' : '15%'}):</Text>
-            <Text style={styles.value}>
-              R$ {(parseFloat(fare) * (driver.level === 'Veterano' ? 0.05 : driver.level === 'Intermediário' ? 0.10 : 0.15)).toFixed(2)}
-            </Text>
+            <Text style={styles.label}>Distância:</Text>
+            <Text style={styles.value}>{currentRide.estimatedDistance?.toFixed(2)} km</Text>
           </View>
           <View style={styles.tripInfo}>
             <Text style={styles.label}>Validações:</Text>
@@ -228,7 +215,7 @@ export default function TripScreen({ route, navigation }) {
         presentationStyle="pageSheet"
       >
         <ChatComponent
-          tripId={tripId}
+          tripId={currentRide.id}
           userType="passenger"
           userName="Passageiro"
           onClose={() => setShowChat(false)}

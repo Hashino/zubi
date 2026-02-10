@@ -1,4 +1,3 @@
-import * as Crypto from 'expo-crypto';
 import StorageService from './StorageService';
 
 class AuthService {
@@ -7,12 +6,17 @@ class AuthService {
   }
 
   // Generate a simple hash for password (NOT secure for production, just for demo)
+  // This is a basic hash function for MVP - in production, use proper crypto libraries
   async hashPassword(password) {
-    const digest = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      password
-    );
-    return digest;
+    let hash = 0;
+    if (password.length === 0) return hash.toString();
+    for (let i = 0; i < password.length; i++) {
+      const char = password.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    // Add timestamp to make it unique
+    return 'hash_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
   }
 
   // Generate a random user ID

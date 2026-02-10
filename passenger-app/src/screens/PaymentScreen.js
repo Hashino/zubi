@@ -10,7 +10,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import PaymentService, { PaymentMethod } from '../../shared/services/PaymentService';
+import PaymentService, { PaymentMethod } from '../../../shared/services/PaymentService';
 
 export default function PaymentScreen({ route, navigation }) {
   const { ride } = route.params;

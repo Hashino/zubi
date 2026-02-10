@@ -16,10 +16,12 @@ import {
   TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useApp } from '../../../shared/contexts/AppContext';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
+  const { location, requestRide, activeRide } = useApp();
   const [darkMode, setDarkMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -48,6 +50,13 @@ export default function HomeScreen({ navigation }) {
   ];
 
   const [currentTip, setCurrentTip] = useState(0);
+
+  // Navigate to trip screen if there's an active ride
+  useEffect(() => {
+    if (activeRide && activeRide.status !== 'completed') {
+      navigation.navigate('Trip', { ride: activeRide });
+    }
+  }, [activeRide, navigation]);
 
   const coupons = [
     { id: 1, code: 'WELCOME20', discount: '20%', description: 'Desconto para novos usuários', valid: true, expiry: '2024-03-01' },
@@ -197,6 +206,154 @@ export default function HomeScreen({ navigation }) {
             />
           </View>
         </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <LinearGradient
+          colors={darkMode ? ['#1B5E20', '#2E7D32', '#388E3C'] : ['#4CAF50', '#45A049', '#43A047']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <Text style={styles.logoEmoji}>🚗</Text>
+          <Text style={styles.title}>Zubi</Text>
+          <Text style={styles.subtitle}>Mobilidade P2P Descentralizada</Text>
+        </LinearGradient>
+
+        {/* Location Status */}
+        {location && (
+          <View style={styles.tipCard}>
+            <Text style={styles.tipText}>
+              📍 Localização: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+            </Text>
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => setShowFavorites(true)}
+          >
+            <Text style={styles.actionEmoji}>⭐</Text>
+            <Text style={styles.actionLabel}>Favoritos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => setShowCoupons(true)}
+          >
+            <Text style={styles.actionEmoji}>🎁</Text>
+            <Text style={styles.actionLabel}>Cupons</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => setShowHistory(true)}
+          >
+            <Text style={styles.actionEmoji}>📋</Text>
+            <Text style={styles.actionLabel}>Histórico</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tip Carousel */}
+        <View style={styles.tipCard}>
+          <Text style={styles.tipText}>{tips[currentTip]}</Text>
+        </View>
+
+        {/* Main Request Ride Button */}
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={() => {
+              handlePressOut();
+              navigation.navigate('Search');
+            }}
+          >
+            <LinearGradient
+              colors={['#4CAF50', '#45A049', '#43A047']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>🚗 Solicitar Corrida</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Benefits Card */}
+        <View style={styles.benefitsCard}>
+          <View style={styles.iconHeader}>
+            <Text style={styles.cardIcon}>💎</Text>
+            <Text style={styles.infoTitle}>Por que Zubi?</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>🔐</Text>
+            <Text style={styles.benefitText}>100% Descentralizado - Sem intermediários</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>💰</Text>
+            <Text style={styles.benefitText}>Taxas baixas - Motoristas veteranos cobram apenas 5%</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>⚡</Text>
+            <Text style={styles.benefitText}>Pagamento Crypto com 2% de desconto</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>🎯</Text>
+            <Text style={styles.benefitText}>Validação de presença via QR Code</Text>
+          </View>
+        </View>
+
+        {/* Fee Structure */}
+        <View style={styles.infoCard}>
+          <View style={styles.iconHeader}>
+            <Text style={styles.cardIcon}>💳</Text>
+            <Text style={styles.infoTitle}>Estrutura de Taxas</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLevel}>🥉 Iniciante</Text>
+            <Text style={styles.feePercent}>15%</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLevel}>🥈 Intermediário</Text>
+            <Text style={styles.feePercent}>10%</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLevel}>🥇 Veterano</Text>
+            <Text style={[styles.feePercent, styles.feeHighlight]}>5%</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLevel}>⚡ Crypto Payment</Text>
+            <Text style={[styles.feePercent, styles.feeHighlight]}>3% (Desconto!)</Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* History Modal */}
+      <Modal
+        visible={showHistory}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📋 Histórico de Viagens</Text>
+              <TouchableOpacity onPress={() => setShowHistory(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={recentTrips}
+              renderItem={renderTripItem}
+              keyExtractor={item => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* Coupons Modal */}
       <Modal

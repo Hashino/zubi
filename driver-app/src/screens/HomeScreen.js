@@ -16,11 +16,13 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDriver } from '../services/DriverService';
+import { useApp } from '../../../shared/contexts/AppContext';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const { driverProfile } = useDriver();
+  const { location, activeRide } = useApp();
   const [darkMode, setDarkMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -79,6 +81,13 @@ export default function HomeScreen({ navigation }) {
     
     return () => pulseAnimation.stop();
   }, []);
+
+  // Navigate to trip screen if there's an active ride
+  useEffect(() => {
+    if (activeRide && activeRide.status !== 'completed') {
+      navigation.navigate('Trip');
+    }
+  }, [activeRide, navigation]);
 
   const getLevelProgress = () => {
     const nextLevelXp = driverProfile.level === 'Iniciante' ? 500 : driverProfile.level === 'Intermediário' ? 1000 : 2000;

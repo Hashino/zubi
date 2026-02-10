@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useDriver } from '../services/DriverService';
-import ChatComponent from '../shared/components/ChatComponent';
+import ChatComponent from '../../shared/components/ChatComponent';
 
 // TODO: Add navigation integration (Google Maps / Waze)
 // TODO: Implement real-time ETA updates

@@ -197,7 +197,6 @@ export default function HomeScreen({ navigation }) {
             />
           </View>
         </View>
-      </Modal>
 
       {/* Coupons Modal */}
       <Modal

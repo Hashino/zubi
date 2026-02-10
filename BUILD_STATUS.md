@@ -2,15 +2,24 @@
 
 ## 🚀 Latest Updates (10/02/2026)
 
-### New Features Added to Codebase:
+### ⚡ NEW: Authentication & Security Infrastructure
+- ✅ **User Authentication**: Full registration and login system with password hashing
+- ✅ **Local Data Persistence**: AsyncStorage integration for trips, favorites, and user data
+- ✅ **QR Code Security**: Cryptographic signatures, replay attack protection, 5-min expiry
+- ✅ **AuthService**: Complete user management with profile updates
+- ✅ **StorageService**: Persistent storage for all app data
+- ✅ **Login/Register Screens**: Professional authentication UI for passenger app
+
+### Previous Features in Codebase:
 - ✅ **Gamification System**: Complete achievements tracking with progress bars and rewards for drivers
 - ✅ **Coupon System**: Discount codes and promotional offers management for passengers  
 - ✅ **Real-time Chat**: In-trip messaging between drivers and passengers with quick actions
 - ✅ **Enhanced UI/UX**: Notification badges, animated elements, and modern design patterns
 - ✅ **Improved HomeScreens**: Interactive elements, quick actions, and better user engagement
 
-### 🔄 Build Status: In Progress
-EAS builds are currently experiencing issues. Previous stable APKs remain available below.
+### 🔄 Build Status: Stable APKs Available
+Latest code pushed to repository. Previous stable APKs available for download below.  
+New builds with authentication features coming soon via local build infrastructure.
 
 ## APKs Disponíveis (Stable Version - MVP)
 
@@ -60,8 +69,16 @@ EAS builds are currently experiencing issues. Previous stable APKs remain availa
 ### Features Para Produção
 Ver arquivo [TODO.md](./TODO.md)
 
-## 📱 New Features (Ready in Code, Pending Build)
-The codebase now includes these enhanced features that will be available in the next successful build:
+## 📱 New Features (Latest - 10/02/2026)
+
+### 🔐 Authentication & Security (JUST ADDED):
+- **User Registration & Login**: Complete auth flow with validation
+- **Password Security**: SHA-256 hashing for password storage
+- **Persistent Sessions**: Auth tokens saved locally
+- **Profile Management**: User profiles with driver-specific fields
+- **QR Security**: Cryptographic signatures with timestamps and nonces
+- **Replay Protection**: Prevents QR code reuse attacks
+- **Data Persistence**: All user data saved locally with AsyncStorage
 
 ### Driver App Enhancements:
 - **🏆 Achievement System**: Gamified experience with 8 different achievements, progress tracking, and XP rewards
@@ -75,7 +92,16 @@ The codebase now includes these enhanced features that will be available in the 
 - **💬 In-Trip Chat**: Real-time messaging with drivers during active trips
 - **⚡ Quick Actions**: Improved home screen with promotion counters and fast access
 
-### Shared Features:
-- **💬 ChatService**: Mock P2P real-time messaging service with typing indicators and quick message templates
-- **🎨 Modern UI**: Enhanced visual design with animations, gradients, and intuitive user interactions
-- **🔄 State Management**: Improved app state handling and user experience flows
+### Shared Infrastructure:
+- **🔒 AuthService**: Complete authentication management
+- **💾 StorageService**: Local data persistence layer
+- **🔐 QRSecurityService**: Secure QR code generation and validation
+- **💬 ChatService**: Mock P2P real-time messaging service with typing indicators
+- **🎨 Modern UI**: Enhanced visual design with animations and gradients
+
+## 🛠️ Local Build Infrastructure
+
+The project now includes scripts for building APKs locally without EAS limits:
+- `npm run build:local:passenger` - Build and submit passenger app
+- `npm run build:local:driver` - Build and submit driver app
+- See `BUILD_LOCAL.md` for complete setup instructions

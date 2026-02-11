@@ -29,9 +29,9 @@ export const PaymentStatus = {
 
 class PaymentService {
   constructor() {
-    this.web3Service = new Web3PaymentService();
-    this.pixService = new PixPaymentService();
-    this.cardService = new CreditCardService();
+    this.web3Service = Web3PaymentService;
+    this.pixService = PixPaymentService;
+    this.cardService = CreditCardService;
     
     // Configuração de taxas
     this.PLATFORM_FEE_PERCENTAGE = 5; // 5% de taxa padrão
@@ -118,6 +118,11 @@ class PaymentService {
   async processCryptoPayment(payment, rideDetails, paymentData) {
     payment.status = PaymentStatus.PROCESSING;
     
+    // Validação: driver deve ter carteira crypto configurada
+    if (!rideDetails.driverWallet) {
+      throw new Error('Driver wallet address not configured');
+    }
+    
     // Smart contract cria escrow e distribui automaticamente quando corrida completa
     const txHash = await this.web3Service.createRideEscrow({
       rideId: rideDetails.id,
@@ -199,11 +204,27 @@ class PaymentService {
   }
 
   /**
+   * Busca um pagamento por ID
+   */
+  async getPayment(paymentId) {
+    // TODO: Implementar storage persistente de pagamentos
+    // Por enquanto, retorna null se não encontrado
+    // Em produção: buscar do banco de dados ou blockchain
+    console.log('[PaymentService] getPayment not fully implemented:', paymentId);
+    return null;
+  }
+
+  /**
    * Completa pagamento após corrida finalizar
    * (Para crypto, libera escrow no smart contract)
    */
   async completePayment(paymentId, rideId) {
     const payment = await this.getPayment(paymentId);
+    
+    if (!payment) {
+      console.warn('[PaymentService] Payment not found:', paymentId);
+      return { success: false, error: 'Payment not found' };
+    }
     
     if (payment.method === PaymentMethod.CRYPTO) {
       // Libera escrow no smart contract

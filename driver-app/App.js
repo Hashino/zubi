@@ -1,3 +1,6 @@
+// Polyfill for TextEncoder/TextDecoder required by nostr-tools
+import 'text-encoding';
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -5,6 +8,7 @@ import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import OnlineScreen from './src/screens/OnlineScreen';
 import TripScreen from './src/screens/TripScreen';
+import DriverRegistrationScreen from './src/screens/DriverRegistrationScreen';
 import { DriverProvider } from './src/services/DriverService';
 import { AppProvider } from '../shared/contexts/AppContext';
 
@@ -31,6 +35,14 @@ export default function App() {
               name="Splash" 
               component={SplashScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Registration" 
+              component={DriverRegistrationScreen}
+              options={{ 
+                title: 'Cadastro de Motorista',
+                headerShown: false 
+              }}
             />
             <Stack.Screen 
               name="Home" 

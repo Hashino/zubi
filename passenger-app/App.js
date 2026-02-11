@@ -1,3 +1,6 @@
+// Polyfill for TextEncoder/TextDecoder required by nostr-tools
+import 'text-encoding';
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -6,12 +9,16 @@ import HomeScreen from './src/screens/HomeScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import TripScreen from './src/screens/TripScreen';
 import PaymentScreen from './src/screens/PaymentScreen';
+import PassengerRegistrationScreen from './src/screens/PassengerRegistrationScreen';
+import DestinationPickerScreen from './src/screens/DestinationPickerScreen';
 import { P2PProvider } from './src/services/P2PService';
 import { AppProvider } from '../shared/contexts/AppContext';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  console.log('[App] Starting Zubi Passenger App...');
+  
   return (
     <AppProvider userType="passenger">
       <P2PProvider>
@@ -34,9 +41,22 @@ export default function App() {
               options={{ headerShown: false }}
             />
             <Stack.Screen 
+              name="Registration" 
+              component={PassengerRegistrationScreen}
+              options={{ 
+                title: 'Cadastro de Passageiro',
+                headerShown: false 
+              }}
+            />
+            <Stack.Screen 
               name="Home" 
               component={HomeScreen}
               options={{ title: 'Zubi - Passageiro' }}
+            />
+            <Stack.Screen 
+              name="DestinationPicker" 
+              component={DestinationPickerScreen}
+              options={{ title: 'Selecione o Destino' }}
             />
             <Stack.Screen 
               name="Search" 

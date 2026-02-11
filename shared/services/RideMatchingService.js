@@ -1,18 +1,19 @@
 /**
- * RideMatchingService - Core matching logic for P2P rides
+ * RideMatchingService - Core matching logic for P2P rides with Nostr
  * 
- * This service manages the entire ride lifecycle:
- * 1. Passenger requests ride
- * 2. Find nearby available drivers
- * 3. Match passenger with driver
- * 4. Track ride progress
- * 5. Handle completion and payment
+ * This service manages the entire ride lifecycle using decentralized P2P:
+ * 1. Passenger requests ride via Nostr
+ * 2. Find nearby available drivers (announced via Nostr)
+ * 3. Match passenger with driver through P2P messaging
+ * 4. Track ride progress with cryptographic presence tokens
+ * 5. Handle completion and payment via smart contracts
  * 
- * Note: For MVP, this uses in-memory state simulation
- * Production: Replace with real P2P networking (libp2p/Nostr)
+ * Implements the PMCD (Protocolo de Mobilidade Cooperativa Descentralizada)
  */
 
 import StorageService from './StorageService';
+import NostrService from './NostrService';
+import KeyManagementService from './KeyManagementService';
 
 export const RideStatus = {
   REQUESTED: 'REQUESTED',
@@ -26,13 +27,74 @@ export const RideStatus = {
 
 class RideMatchingService {
   constructor() {
-    // Simulated network state (in production, this would be P2P network)
-    this.availableDrivers = new Map();
+    // Hybrid architecture: Local cache + P2P network
+    this.availableDrivers = new Map(); // Local cache of Nostr announcements
     this.activeRides = new Map();
     this.rideRequests = new Map();
     
     // Event listeners for real-time updates
     this.listeners = new Map();
+    
+    // Nostr connection status
+    this.nostrConnected = false;
+    this.nostrInitialized = false;
+    
+    // Initialize Nostr asynchronously (not awaited in constructor)
+    this.initializeNostr().catch(err => {
+      console.error('[RideMatchingService] Nostr init failed:', err);
+    });
+  }
+
+  /**
+   * Initialize Nostr connection for P2P
+   */
+  async initializeNostr() {
+    if (this.nostrInitialized) {
+      return;
+    }
+    
+    try {
+      const result = await NostrService.connect();
+      if (result.success) {
+        this.nostrConnected = true;
+        this.nostrInitialized = true;
+        console.log('[RideMatchingService] Nostr P2P initialized');
+        
+        // Subscribe to user-specific events
+        await NostrService.subscribeToUserEvents(this.handleNostrEvent.bind(this));
+      } else {
+        console.warn('[RideMatchingService] Nostr connection failed, using fallback');
+      }
+    } catch (error) {
+      console.error('[RideMatchingService] Nostr init error:', error);
+    }
+  }
+
+  /**
+   * Handle incoming Nostr events (ride requests, acceptances, etc)
+   */
+  handleNostrEvent(event) {
+    try {
+      const content = JSON.parse(event.content);
+      
+      switch (content.type) {
+        case 'ride_request':
+          // Driver receives ride request
+          this.emit(`rideRequest:${event.tags.find(t => t[0] === 'p')[1]}`, content);
+          break;
+        case 'ride_accepted':
+          // Passenger receives acceptance
+          this.emit(`rideAccepted:${content.passengerId}`, content);
+          break;
+        case 'ride_cancelled':
+          this.emit(`rideCancelled:${content.userId}`, content);
+          break;
+        default:
+          console.log('[RideMatchingService] Unknown Nostr event type:', content.type);
+      }
+    } catch (error) {
+      console.error('[RideMatchingService] Error handling Nostr event:', error);
+    }
   }
 
   /**
@@ -63,7 +125,7 @@ class RideMatchingService {
   }
 
   /**
-   * Driver announces availability (goes online)
+   * Driver announces availability (goes online) - P2P via Nostr
    */
   async announceDriverAvailability(driverProfile, location) {
     const driver = {
@@ -72,8 +134,8 @@ class RideMatchingService {
       vehicle: driverProfile.vehicle,
       plate: driverProfile.plate,
       rating: driverProfile.rating,
-      level: driverProfile.level,
-      xp: driverProfile.xp,
+      level: driverProfile.level || 'iniciante',
+      xp: driverProfile.xp || 0,
       location: {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -82,9 +144,27 @@ class RideMatchingService {
       timestamp: Date.now(),
     };
 
+    // Cache locally
     this.availableDrivers.set(driverProfile.id, driver);
     
-    // Notify listeners
+    // Announce via Nostr P2P network
+    if (this.nostrConnected) {
+      try {
+        await NostrService.announceDriver({
+          driverId: driver.id,
+          name: driver.name,
+          vehicle: driver.vehicle,
+          rating: driver.rating,
+          level: driver.level,
+          location: driver.location,
+        });
+        console.log('[RideMatchingService] Driver announced on Nostr P2P network');
+      } catch (error) {
+        console.warn('[RideMatchingService] Failed to announce on Nostr, using local only:', error);
+      }
+    }
+    
+    // Notify local listeners
     this.emit('driverOnline', driver);
     
     return { success: true, driverId: driverProfile.id };
@@ -118,11 +198,35 @@ class RideMatchingService {
   }
 
   /**
-   * Find nearby drivers for a passenger location
+   * Find nearby drivers for a passenger location - Uses Nostr P2P
    */
   async findNearbyDrivers(passengerLocation, maxDistanceKm = 5) {
-    const nearbyDrivers = [];
+    let nearbyDrivers = [];
     
+    // Try P2P first (Nostr)
+    if (this.nostrConnected) {
+      try {
+        const nostrResult = await NostrService.findNearbyDrivers(passengerLocation, maxDistanceKm);
+        if (nostrResult.success && nostrResult.drivers.length > 0) {
+          nearbyDrivers = nostrResult.drivers.map(driver => ({
+            ...driver,
+            estimatedArrival: Math.ceil(driver.distance * 3), // ~3 min per km
+          }));
+          
+          // Update local cache
+          nearbyDrivers.forEach(driver => {
+            this.availableDrivers.set(driver.driverId || driver.id, driver);
+          });
+          
+          console.log('[RideMatchingService] Found', nearbyDrivers.length, 'drivers via Nostr P2P');
+          return nearbyDrivers;
+        }
+      } catch (error) {
+        console.warn('[RideMatchingService] Nostr search failed, falling back to local:', error);
+      }
+    }
+    
+    // Fallback: Use local cache
     for (const [driverId, driver] of this.availableDrivers) {
       if (!driver.isAvailable) continue;
       
@@ -144,6 +248,8 @@ class RideMatchingService {
     
     // Sort by distance (closest first)
     nearbyDrivers.sort((a, b) => a.distance - b.distance);
+    
+    console.log('[RideMatchingService] Found nearby drivers:', nearbyDrivers.length, 'total available:', this.availableDrivers.size);
     
     return nearbyDrivers;
   }

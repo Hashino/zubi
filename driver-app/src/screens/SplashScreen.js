@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import StorageService from '../../../shared/services/StorageService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,8 +46,16 @@ export default function SplashScreen({ navigation }) {
     ]);
 
     animationSequence.start(() => {
-      setTimeout(() => {
-        navigation.replace('Home');
+      setTimeout(async () => {
+        // Verifica se motorista já está cadastrado
+        const profile = await StorageService.getDriverProfile();
+        if (profile && profile.userId) {
+          console.log('[Splash] Driver registered, going to Home');
+          navigation.replace('Home');
+        } else {
+          console.log('[Splash] No driver profile, going to Registration');
+          navigation.replace('Registration');
+        }
       }, 500);
     });
   }, []);

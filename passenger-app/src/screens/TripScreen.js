@@ -136,7 +136,7 @@ export default function TripScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Motorista</Text>
           <Text style={styles.driverName}>{currentRide.driverName || 'Motorista'}</Text>
           <Text style={styles.driverInfo}>{currentRide.driverVehicle || 'Veículo'}</Text>
-          <Text style={styles.driverInfo}>Placa: {currentRide.driverPlate || 'XXX-0000'}</Text>
+          <Text style={styles.driverInfo}>Placa: {currentRide.driverPlate || 'N/A'}</Text>
           <View style={styles.driverBadge}>
             <Text style={styles.badgeText}>
               {currentRide.driverLevel || 'Intermediário'} • ⭐ {currentRide.driverRating || '5.0'}

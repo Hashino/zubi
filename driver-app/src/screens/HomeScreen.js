@@ -27,40 +27,17 @@ export default function HomeScreen({ navigation }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
-  const achievements = [
-    { id: 1, title: '🚗 Primeiro Passageiro', description: 'Complete sua primeira viagem', completed: true, date: '2024-01-15' },
-    { id: 2, title: '🔥 Série de 10', description: '10 viagens consecutivas com 5 estrelas', completed: true, date: '2024-01-20' },
-    { id: 3, title: '💯 Century Club', description: 'Complete 100 viagens', completed: true, date: '2024-02-01' },
-    { id: 4, title: '⚡ Flash Speed', description: 'Complete 5 viagens em uma hora', completed: true, date: '2024-02-05' },
-    { id: 5, title: '🏆 Elite Driver', description: 'Mantenha 4.8+ de avaliação por 30 dias', completed: true, date: '2024-02-07' },
-    { id: 6, title: '💎 Diamond Status', description: 'Complete 500 viagens (Progress: 427/500)', completed: false, progress: 85.4 },
-    { id: 7, title: '🌟 Perfect Week', description: 'Complete uma semana com 100% de avaliações 5 estrelas', completed: false },
-    { id: 8, title: '🎯 Precisão Master', description: 'Complete 20 viagens sem cancelamentos', completed: false, progress: 60 },
-  ];
-
-  const getCompletedAchievements = () => achievements.filter(a => a.completed).length;
-  const getTotalAchievements = () => achievements.length;
-
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
+  const achievements = [];
+  const recentTrips = [];
+  const notifications = [];
+  
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  const recentTrips = [
-    { id: 1, date: '2024-02-08', destination: 'Shopping Center', earnings: 25.50, rating: 5 },
-    { id: 2, date: '2024-02-08', destination: 'Aeroporto Internacional', earnings: 45.00, rating: 5 },
-    { id: 3, date: '2024-02-07', destination: 'Universidade Federal', earnings: 18.75, rating: 4 },
-    { id: 4, date: '2024-02-07', destination: 'Centro da Cidade', earnings: 12.30, rating: 5 },
-    { id: 5, date: '2024-02-06', destination: 'Hospital Regional', earnings: 22.40, rating: 5 },
-  ];
-
-  const notifications = [
-    { id: 1, type: 'achievement', title: '🏆 Nova Conquista!', message: 'Você completou 100 viagens! Parabéns!', time: '2 min', unread: true },
-    { id: 2, type: 'system', title: '📱 Atualização Disponível', message: 'Nova versão do app disponível na Play Store', time: '1 hora', unread: true },
-    { id: 3, type: 'earnings', title: '💰 Ganhos da Semana', message: 'Você ganhou R$ 420,50 esta semana!', time: '3 horas', unread: false },
-    { id: 4, type: 'tip', title: '💡 Dica de Eficiência', message: 'Dirija nas horas de pico para maximizar ganhos', time: '1 dia', unread: false },
-    { id: 5, type: 'promotion', title: '🎁 Oferta Especial', message: 'Ganhe bônus de 20% em viagens hoje!', time: '30 min', unread: true },
-    { id: 6, type: 'achievement', title: '⭐ 5 Estrelas!', message: 'Sua avaliação média subiu para 4.8!', time: '2 horas', unread: true },
-  ];
+  
+  const getCompletedAchievements = () => achievements.filter(a => a.completed).length;
+  const getTotalAchievements = () => achievements.length;
 
   useEffect(() => {
     const pulseAnimation = Animated.loop(

@@ -60,13 +60,14 @@ export const P2PProvider = ({ children }) => {
     }
 
     try {
-      // Create passenger profile from storage or defaults
-      const passengerProfile = {
-        id: 'passenger_' + Date.now(),
-        name: 'Passageiro',
-        phone: '(11) 99999-9999',
-        rating: 5.0,
-      };
+      // Get passenger profile from storage
+      const StorageService = require('../../../shared/services/StorageService').default;
+      let passengerProfile = await StorageService.getUserProfile();
+      
+      if (!passengerProfile) {
+        console.error('[P2PService] No passenger profile found');
+        return false;
+      }
 
       // Request ride through RideMatchingService
       const result = await RideMatchingService.requestRide(

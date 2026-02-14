@@ -29,20 +29,12 @@ export default function HomeScreen({ navigation }) {
   const [showCoupons, setShowCoupons] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [diagnosticResults, setDiagnosticResults] = useState(null);
-  const [favorites, setFavorites] = useState([
-    { id: 1, name: 'Casa', address: 'Rua das Flores, 123', icon: '🏠' },
-    { id: 2, name: 'Trabalho', address: 'Av. Paulista, 1000', icon: '🏢' },
-  ]);
+  const [favorites, setFavorites] = useState([]);
   const [newFavorite, setNewFavorite] = useState({ name: '', address: '', icon: '📍' });
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const recentTrips = [
-    { id: 1, date: '2024-02-08', origin: 'Centro', destination: 'Shopping Mall', cost: 25.50, driver: 'João Silva', rating: 5 },
-    { id: 2, date: '2024-02-08', origin: 'Casa', destination: 'Aeroporto', cost: 45.00, driver: 'Maria Santos', rating: 5 },
-    { id: 3, date: '2024-02-07', origin: 'Trabalho', destination: 'Universidade', cost: 18.75, driver: 'Carlos Lima', rating: 4 },
-    { id: 4, date: '2024-02-07', origin: 'Shopping', destination: 'Casa', cost: 22.30, driver: 'Ana Costa', rating: 5 },
-  ];
+  const recentTrips = [];
 
   const tips = [
     '💡 Adicione locais favoritos para buscar mais rápido!',
@@ -61,13 +53,7 @@ export default function HomeScreen({ navigation }) {
     }
   }, [activeRide, navigation]);
 
-  const coupons = [
-    { id: 1, code: 'WELCOME20', discount: '20%', description: 'Desconto para novos usuários', valid: true, expiry: '2024-03-01' },
-    { id: 2, code: 'WEEKEND15', discount: '15%', description: 'Viagens de fim de semana', valid: true, expiry: '2024-02-25' },
-    { id: 3, code: 'VETERAN10', discount: '10%', description: 'Viagens com motoristas veteranos', valid: true, expiry: '2024-02-20' },
-    { id: 4, code: 'USED50', discount: 'R$ 5,00', description: 'Primeiro desconto usado', valid: false, expiry: '2024-02-10' },
-    { id: 5, code: 'LOYAL25', discount: '25%', description: 'Fidelidade - 10+ viagens', valid: true, expiry: '2024-03-15' },
-  ];
+  const coupons = [];
 
   const getValidCoupons = () => coupons.filter(c => c.valid).length;
 

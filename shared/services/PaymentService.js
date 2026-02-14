@@ -207,10 +207,7 @@ class PaymentService {
    * Busca um pagamento por ID
    */
   async getPayment(paymentId) {
-    // TODO: Implementar storage persistente de pagamentos
-    // Por enquanto, retorna null se não encontrado
-    // Em produção: buscar do banco de dados ou blockchain
-    console.log('[PaymentService] getPayment not fully implemented:', paymentId);
+    console.warn('[PaymentService] Payment persistence not implemented:', paymentId);
     return null;
   }
 

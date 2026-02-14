@@ -48,21 +48,21 @@ export default function SplashScreen({ navigation }) {
       setTimeout(async () => {
         try {
           console.log('[Splash] Animation complete, checking profile...');
-          // Verifica se passageiro já está cadastrado
+          // Verifica se passageiro já está cadastrado usando o método correto
           const StorageService = (await import('../../../shared/services/StorageService')).default;
           console.log('[Splash] StorageService loaded');
-          const userId = await StorageService.getItem('current_user_id');
-          console.log('[Splash] Current user ID:', userId);
-          if (userId) {
-            const profile = await StorageService.getItem(`passenger_profile_${userId}`);
-            console.log('[Splash] Profile found:', !!profile);
-            if (profile && profile.userId) {
-              console.log('[Splash] Passenger registered, going to Home');
-              navigation.replace('Home');
-              return;
-            }
+          
+          // Usa getUserProfile() que verifica @zubi_user_profile
+          const userProfile = await StorageService.getUserProfile();
+          console.log('[Splash] User profile found:', !!userProfile);
+          
+          if (userProfile && userProfile.id) {
+            console.log('[Splash] User registered, going to Home');
+            navigation.replace('Home');
+            return;
           }
-          console.log('[Splash] No passenger profile, going to Registration');
+          
+          console.log('[Splash] No user profile, going to Registration');
           navigation.replace('Registration');
         } catch (error) {
           console.error('[Splash] Error during navigation:', error);

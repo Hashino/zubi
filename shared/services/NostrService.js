@@ -129,7 +129,7 @@ class NostrService {
         limit: 50,
       }];
 
-      const events = await this.pool.querySync(this.relays, filters);
+      const events = await this.pool.list(this.relays, filters);
       
       // Filtra por distância real e verifica eventos
       const drivers = [];
@@ -182,7 +182,6 @@ class NostrService {
       ['t', 'ride-request'],
     ];
 
-    // TODO: Implementar criptografia NIP-04 para mensagens privadas
     return await this.publishEvent(4, content, tags);
   }
 
@@ -253,11 +252,8 @@ class NostrService {
    * Retorna geohashes próximos (incluindo células adjacentes)
    */
   getNearbyGeohashes(location, radiusKm) {
-    // Simplificado: retorna célula central + 8 adjacentes
     const precision = 5;
     const geohashes = [this.getGeohash(location, precision)];
-    
-    // TODO: Implementar cálculo correto de células adjacentes
     return geohashes;
   }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Build script com recursos limitados para não travar o sistema
-# Uso: ./build-light.sh [passenger|driver|both]
+# Build incremental - Não limpa JS cache, muito mais rápido!
+# Uso: ./build-incremental.sh [passenger|driver|both]
 
 set -e
 
@@ -9,44 +9,46 @@ export JAVA_HOME=~/.local/jdk/jdk-17.0.2
 export ANDROID_HOME=~/Android/Sdk
 export PATH=$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-# Recursos aumentados para build completo
-export GRADLE_OPTS="-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
+# Limita recursos
+export GRADLE_OPTS="-Xmx512m -XX:MaxMetaspaceSize=256m"
 
 APP=$1
 
-echo "🚀 Zubi Build - Recursos Completos"
-echo "========================================"
+echo "⚡ Zubi Incremental Build - Super Rápido!"
+echo "========================================="
+echo "✓ Mantém JS cache existente"
+echo "✓ Apenas recompila código alterado"
+echo ""
 
 build_app() {
     local app_name=$1
     local app_dir=$2
     
-    echo ""
-    echo "📦 Building $app_name..."
+    echo "📦 Building $app_name (incremental)..."
     echo "------------------------"
     
     cd "$app_dir/android"
     
-    # Build com recursos aumentados
+    # Build incremental - NÃO limpa bundle
     ./gradlew assembleRelease \
         --no-daemon \
-        --max-workers=2 \
+        --max-workers=1 \
         --parallel \
         --configure-on-demand \
         --build-cache \
         2>&1 | tee "/tmp/${app_name}-build.log"
     
     if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
-        echo "✅ $app_name build successful!"
+        echo "✅ $app_name build OK!"
         
-        # Copia APK para diretório unificado
         mkdir -p ~/zubi-builds
         cp app/build/outputs/apk/release/app-release.apk \
            ~/zubi-builds/zubi-${app_name}-app.apk
         
+        echo "APK: ~/zubi-builds/zubi-${app_name}-app.apk"
         ls -lh ~/zubi-builds/zubi-${app_name}-app.apk
     else
-        echo "❌ $app_name build failed!"
+        echo "❌ Build failed!"
         tail -50 "/tmp/${app_name}-build.log"
         exit 1
     fi
@@ -63,6 +65,5 @@ if [ "$APP" == "driver" ] || [ "$APP" == "both" ]; then
 fi
 
 echo ""
-echo "🎉 Build completo!"
-echo "APKs disponíveis em: ~/zubi-builds/"
-ls -lh ~/zubi-builds/
+echo "🎉 Build incremental completo!"
+echo "APKs em: ~/zubi-builds/"

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../../../shared/contexts/AppContext';
+import DiagnosticService from '../../../shared/services/DiagnosticService';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,8 @@ export default function HomeScreen({ navigation }) {
   const [showHistory, setShowHistory] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showCoupons, setShowCoupons] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnosticResults, setDiagnosticResults] = useState(null);
   const [favorites, setFavorites] = useState([
     { id: 1, name: 'Casa', address: 'Rua das Flores, 123', icon: '🏠' },
     { id: 2, name: 'Trabalho', address: 'Av. Paulista, 1000', icon: '🏢' },
@@ -122,6 +125,17 @@ export default function HomeScreen({ navigation }) {
       Alert.alert('Sucesso', 'Local favorito adicionado!');
     } else {
       Alert.alert('Erro', 'Preencha nome e endereço do local favorito.');
+    }
+  };
+
+  const runDiagnostics = async () => {
+    try {
+      Alert.alert('Diagnóstico', 'Executando testes... Aguarde.');
+      const results = await DiagnosticService.runFullDiagnostic();
+      setDiagnosticResults(results);
+      setShowDiagnostics(true);
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao executar diagnósticos: ' + error.message);
     }
   };
 

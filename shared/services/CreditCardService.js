@@ -1,90 +1,40 @@
 /**
  * CreditCardService - Credit card payment integration
  * 
- * For MVP: Mock implementation
- * Production: Integrate with real gateway (Stripe, Mercado Pago, etc)
+ * Integrates with payment gateway (Stripe, Mercado Pago, etc)
+ * IMPORTANT: Requires proper PCI-DSS compliance
  */
 
 class CreditCardService {
   constructor() {
-    // TODO: Add real gateway API keys
-    this.gatewayUrl = 'https://api.stripe.com'; // Example
-    this.apiKey = process.env.STRIPE_API_KEY || 'mock_key';
+    this.gatewayUrl = process.env.PAYMENT_GATEWAY_URL;
+    this.apiKey = process.env.PAYMENT_GATEWAY_API_KEY;
+    
+    if (!this.apiKey) {
+      console.warn('[CreditCardService] API key not configured');
+    }
   }
 
   /**
    * Tokenize credit card (PCI-compliant)
+   * NEVER send raw card data to your server
    */
   async tokenizeCard(cardData) {
-    // TODO: Use gateway's client-side SDK to tokenize card
-    // NEVER send raw card data to your server
-    // Example with Stripe.js:
-    // const token = await stripe.createToken('card', cardElement);
-    
-    // Mock implementation
-    return {
-      token: `tok_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      last4: cardData.number.slice(-4),
-      brand: this.detectCardBrand(cardData.number),
-      expiryMonth: cardData.expiryMonth,
-      expiryYear: cardData.expiryYear,
-    };
+    throw new Error('CreditCardService.tokenizeCard() not implemented - configure payment gateway');
   }
 
   /**
    * Create charge using tokenized card
    */
   async createCharge({ amount, cardToken, description, metadata }) {
-    // TODO: Replace with real gateway API call
-    // Example with Stripe:
-    // const charge = await fetch(`${this.gatewayUrl}/v1/charges`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${this.apiKey}`,
-    //     'Content-Type': 'application/x-www-form-urlencoded',
-    //   },
-    //   body: new URLSearchParams({
-    //     amount: Math.round(amount * 100), // cents
-    //     currency: 'brl',
-    //     source: cardToken,
-    //     description,
-    //   }),
-    // });
-    
-    // Mock implementation for MVP
-    const chargeId = `ch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock success (90% success rate)
-    const success = Math.random() > 0.1;
-    
-    if (!success) {
-      throw new Error('Cartão recusado. Verifique os dados ou tente outro cartão.');
-    }
-    
-    return {
-      id: chargeId,
-      amount,
-      status: 'succeeded',
-      cardLast4: cardToken.slice(-4),
-      createdAt: Date.now(),
-      metadata,
-    };
+    throw new Error('CreditCardService.createCharge() not implemented - configure payment gateway');
   }
 
   /**
    * Refund a charge
    */
   async refundCharge(chargeId, amount) {
-    // TODO: Implement with real gateway
-    return {
-      success: true,
-      refundId: `re_${Date.now()}`,
-      chargeId,
-      amount,
-    };
+    throw new Error('CreditCardService.refundCharge() not implemented - configure payment gateway');
   }
 
   /**

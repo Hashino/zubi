@@ -52,8 +52,7 @@ export default function SearchScreen({ navigation }) {
 
   const handleSelectDriver = async (driver) => {
     // TODO: Add driver profile view before confirming
-    // TODO: Implement fare estimation based on destination
-    // FIX: Add connection timeout handling
+    // TODO: Add destination input dialog
     Alert.alert(
       'Confirmar Solicitação',
       `Deseja solicitar viagem com ${driver.name}?\n\n` +
@@ -67,7 +66,21 @@ export default function SearchScreen({ navigation }) {
         {
           text: 'Confirmar',
           onPress: async () => {
-            const connected = await connectToPeer(driver.id);
+            // For now, use current location + offset as destination
+            // TODO: Add destination picker screen
+            const origin = {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              address: 'Sua localização',
+            };
+            
+            const destination = {
+              latitude: location.latitude + 0.01,
+              longitude: location.longitude + 0.01,
+              address: 'Destino (mock)',
+            };
+
+            const connected = await connectToPeer(driver.id, origin, destination);
             if (connected) {
               navigation.navigate('Trip', { 
                 driver,

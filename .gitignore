@@ -42,3 +42,12 @@ Thumbs.db
 *.swo
 *.json
 zubi-play-store-publisher-*.json
+
+# Hardhat
+cache/
+artifacts/
+deployments/*.json
+!deployments/.gitkeep
+
+# Contract artifacts
+*.dbg.json

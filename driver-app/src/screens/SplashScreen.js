@@ -47,13 +47,21 @@ export default function SplashScreen({ navigation }) {
 
     animationSequence.start(() => {
       setTimeout(async () => {
-        // Verifica se motorista já está cadastrado
-        const profile = await StorageService.getDriverProfile();
-        if (profile && profile.userId) {
-          console.log('[Splash] Driver registered, going to Home');
-          navigation.replace('Home');
-        } else {
-          console.log('[Splash] No driver profile, going to Registration');
+        try {
+          console.log('[Splash] Animation complete, checking profile...');
+          // Verifica se motorista já está cadastrado
+          const profile = await StorageService.getUserProfile(); // Usa getUserProfile ao invés de getDriverProfile
+          console.log('[Splash] User profile found:', !!profile);
+          
+          if (profile && profile.id && profile.userType === 'driver') {
+            console.log('[Splash] Driver registered, going to Home');
+            navigation.replace('Home');
+          } else {
+            console.log('[Splash] No driver profile, going to Registration');
+            navigation.replace('Registration');
+          }
+        } catch (error) {
+          console.error('[Splash] Error during navigation:', error);
           navigation.replace('Registration');
         }
       }, 500);

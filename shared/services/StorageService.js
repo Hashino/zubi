@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEYS = {
   USER_PROFILE: '@zubi_user_profile',
+  DRIVER_PROFILE: '@zubi_driver_profile',
   TRIP_HISTORY: '@zubi_trip_history',
   FAVORITES: '@zubi_favorites',
   AUTH_TOKEN: '@zubi_auth_token',
@@ -72,6 +73,24 @@ class StorageService {
     return { success: false, error: 'No profile found' };
   }
 
+  // Driver Profile (separate from user profile for driver app)
+  async saveDriverProfile(profile) {
+    return await this.setItem(KEYS.DRIVER_PROFILE, profile);
+  }
+
+  async getDriverProfile() {
+    return await this.getItem(KEYS.DRIVER_PROFILE);
+  }
+
+  async updateDriverProfile(updates) {
+    const currentProfile = await this.getDriverProfile();
+    if (currentProfile) {
+      const updatedProfile = { ...currentProfile, ...updates };
+      return await this.saveDriverProfile(updatedProfile);
+    }
+    return { success: false, error: 'No driver profile found' };
+  }
+
   // Auth Token
   async saveAuthToken(token) {
     return await this.setItem(KEYS.AUTH_TOKEN, token);
@@ -85,20 +104,22 @@ class StorageService {
     return await this.removeItem(KEYS.AUTH_TOKEN);
   }
 
-  // Trip History
-  async saveTripHistory(trips) {
-    return await this.setItem(KEYS.TRIP_HISTORY, trips);
+  // Trip History (supports user ID for multi-user storage)
+  async saveTripHistory(userId, trips) {
+    const key = `${KEYS.TRIP_HISTORY}_${userId}`;
+    return await this.setItem(key, trips);
   }
 
-  async getTripHistory() {
-    const history = await this.getItem(KEYS.TRIP_HISTORY);
+  async getTripHistory(userId) {
+    const key = `${KEYS.TRIP_HISTORY}_${userId}`;
+    const history = await this.getItem(key);
     return history || [];
   }
 
-  async addTrip(trip) {
-    const history = await this.getTripHistory();
+  async addTrip(userId, trip) {
+    const history = await this.getTripHistory(userId);
     const updatedHistory = [trip, ...history];
-    return await this.saveTripHistory(updatedHistory);
+    return await this.saveTripHistory(userId, updatedHistory);
   }
 
   // Favorites

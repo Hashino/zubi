@@ -187,7 +187,7 @@ class DiagnosticService {
         limit: 1,
       }];
 
-      const events = await NostrService.pool.querySync(NostrService.relays, filters);
+      const events = await NostrService.pool.list(NostrService.relays, filters);
       
       if (events && events.length > 0) {
         console.log('✅ Nostr Query OK - Found', events.length, 'events');

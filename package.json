@@ -12,9 +12,32 @@
     "build:local:driver": "./scripts/build-and-submit.sh driver",
     "version:passenger": "node scripts/increment-version.js passenger",
     "version:driver": "node scripts/increment-version.js driver",
-    "install:all": "npm install && cd passenger-app && npm install && cd ../driver-app && npm install"
+    "install:all": "npm install && cd passenger-app && npm install && cd ../driver-app && npm install",
+    "contract:compile": "npx hardhat compile",
+    "contract:test": "npx hardhat test",
+    "contract:deploy:mumbai": "npx hardhat run scripts/deploy-contract.js --network mumbai",
+    "contract:deploy:polygon": "npx hardhat run scripts/deploy-contract.js --network polygon",
+    "contract:deploy:local": "npx hardhat run scripts/deploy-contract.js --network localhost",
+    "contract:verify": "npx hardhat verify --network mumbai"
   },
-  "keywords": ["zubi", "p2p", "mobility", "blockchain"],
+  "keywords": [
+    "zubi",
+    "p2p",
+    "mobility",
+    "blockchain"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@noble/secp256k1": "^2.3.0",
+    "ethers": "^6.16.0",
+    "nostr-tools": "^2.23.0",
+    "react-native-ble-plx": "^3.5.0",
+    "react-native-maps": "^1.27.1"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.19.5"
+  }
 }

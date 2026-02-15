@@ -5,161 +5,314 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  FlatList,
+  TextInput,
   ActivityIndicator,
-  Alert
+  Alert,
+  FlatList,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { useP2P } from '../services/P2PService';
+import StorageService from '../../../shared/services/StorageService';
 
-// warn: No background location tracking
-// TODO: Add real-time driver location updates
-// TODO: Implement map view with driver pins
-// FIX: Add pull-to-refresh functionality
-// bug: Location permission is requested every time - should cache permission status
-
+/**
+ * SearchScreen - Nova versão: Passageiro escolhe apenas o DESTINO
+ * 
+ * Fluxo:
+ * 1. Origem = Localização atual automática
+ * 2. Passageiro digita/escolhe destino
+ * 3. Calcula distância e valor estimado
+ * 4. Ao confirmar, publica solicitação no Nostr
+ * 5. Navega para RideWaitingScreen onde motoristas se candidatam
+ */
 export default function SearchScreen({ navigation }) {
-  const [location, setLocation] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [destinationText, setDestinationText] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedDestination, setSelectedDestination] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { peers, discoverPeers, connectToPeer } = useP2P();
+  const [searching, setSearching] = useState(false);
+  const [passengerProfile, setPassengerProfile] = useState(null);
 
   useEffect(() => {
-    getLocationAndSearch();
+    setupScreen();
   }, []);
 
-  const getLocationAndSearch = async () => {
-    // TODO: Add location caching to reduce API calls
-    // FIX: Handle location services disabled scenario
+  const setupScreen = async () => {
     try {
+      // Carregar perfil do passageiro
+      const profile = await StorageService.getUserProfile();
+      if (!profile) {
+        Alert.alert('Erro', 'Perfil de passageiro não encontrado');
+        navigation.goBack();
+        return;
+      }
+      setPassengerProfile(profile);
+
+      // Obter localização atual
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Erro', 'Permissão de localização negada');
-        setLoading(false);
+        Alert.alert('Erro', 'Permissão de localização necessária');
+        navigation.goBack();
         return;
       }
 
-      const currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation(currentLocation.coords);
-      
-      // Descobrir motoristas próximos
-      discoverPeers(currentLocation.coords);
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation(location.coords);
       setLoading(false);
     } catch (error) {
+      console.error('[SearchScreen] Setup error:', error);
       Alert.alert('Erro', 'Não foi possível obter localização');
-      setLoading(false);
+      navigation.goBack();
     }
   };
 
-  const handleSelectDriver = async (driver) => {
-    // TODO: Add driver profile view before confirming
-    // TODO: Add destination input dialog
+  const searchAddress = async (query) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      // Mock de busca de endereços
+      // TODO: Integrar com Google Places API
+      const results = await mockGeocodeSearch(query);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('[SearchScreen] Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const mockGeocodeSearch = async (query) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockResults = [
+          {
+            id: '1',
+            address: `${query} - Centro, Vitória - ES`,
+            latitude: currentLocation.latitude + 0.01,
+            longitude: currentLocation.longitude + 0.01,
+          },
+          {
+            id: '2',
+            address: `${query} - Praia do Canto, Vitória - ES`,
+            latitude: currentLocation.latitude + 0.02,
+            longitude: currentLocation.longitude + 0.02,
+          },
+          {
+            id: '3',
+            address: `${query} - Vila Velha - ES`,
+            latitude: currentLocation.latitude - 0.015,
+            longitude: currentLocation.longitude - 0.01,
+          },
+        ];
+        resolve(mockResults);
+      }, 500);
+    });
+  };
+
+  const selectDestination = (destination) => {
+    setSelectedDestination(destination);
+    setDestinationText(destination.address);
+    setSearchResults([]);
+  };
+
+  const calculateDistance = () => {
+    if (!currentLocation || !selectedDestination) return 0;
+
+    const R = 6371; // Raio da Terra em km
+    const dLat = deg2rad(selectedDestination.latitude - currentLocation.latitude);
+    const dLon = deg2rad(selectedDestination.longitude - currentLocation.longitude);
+    
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(currentLocation.latitude)) *
+      Math.cos(deg2rad(selectedDestination.latitude)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const calculateFare = (distanceKm) => {
+    const BASE_FARE = 5.0;
+    const PER_KM = 2.5;
+    const MIN_FARE = 8.0;
+    
+    const fare = BASE_FARE + (distanceKm * PER_KM);
+    return Math.max(fare, MIN_FARE);
+  };
+
+  const deg2rad = (deg) => deg * (Math.PI / 180);
+
+  const handleRequestRide = () => {
+    if (!selectedDestination) {
+      Alert.alert('Atenção', 'Selecione um destino');
+      return;
+    }
+
+    const distance = calculateDistance();
+    const fare = calculateFare(distance);
+
     Alert.alert(
       'Confirmar Solicitação',
-      `Deseja solicitar viagem com ${driver.name}?\n\n` +
-      `Veículo: ${driver.vehicle}\n` +
-      `Placa: ${driver.plate}\n` +
-      `Distância: ${driver.distance.toFixed(1)} km\n` +
-      `Nível: ${driver.level}\n` +
-      `Taxa: ${driver.level === 'Veterano' ? '5%' : driver.level === 'Intermediário' ? '10%' : '15%'}`,
+      `Destino: ${selectedDestination.address}\n\n` +
+      `Distância: ${distance.toFixed(1)} km\n` +
+      `Valor estimado: R$ ${fare.toFixed(2)}\n\n` +
+      `Motoristas próximos poderão se candidatar para sua corrida.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
-          onPress: async () => {
-            // For now, use current location + offset as destination
-            // TODO: Add destination picker screen
-            const origin = {
-              latitude: location.latitude,
-              longitude: location.longitude,
-              address: 'Sua localização',
-            };
-            
-            const destination = {
-              latitude: location.latitude + 0.01,
-              longitude: location.longitude + 0.01,
-              address: 'Destino (mock)',
-            };
-
-            const connected = await connectToPeer(driver.id, origin, destination);
-            if (connected) {
-              navigation.navigate('Trip', { 
-                driver,
-                tripId: 'trip_' + Date.now()
-              });
-            } else {
-              Alert.alert('Erro', 'Não foi possível conectar ao motorista');
-            }
-          }
+          onPress: () => publishRideRequest(distance, fare),
         }
       ]
     );
   };
 
-  const renderDriverItem = ({ item }) => (
+  const publishRideRequest = (distance, fare) => {
+    const rideRequest = {
+      rideId: `ride_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      passengerId: passengerProfile.userId,
+      passengerName: passengerProfile.name,
+      passengerRating: passengerProfile.rating || 5.0,
+      origin: {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        address: 'Sua localização atual',
+      },
+      destination: selectedDestination,
+      estimatedDistance: parseFloat(distance.toFixed(2)),
+      estimatedFare: parseFloat(fare.toFixed(2)),
+      timestamp: Date.now(),
+    };
+
+    console.log('[SearchScreen] Publishing ride request:', rideRequest);
+
+    // Navega para tela de espera
+    navigation.navigate('RideWaiting', { rideRequest });
+  };
+
+  const renderSearchResult = ({ item }) => (
     <TouchableOpacity
-      style={styles.driverCard}
-      onPress={() => handleSelectDriver(item)}
+      style={styles.resultItem}
+      onPress={() => selectDestination(item)}
     >
-      <View style={styles.driverHeader}>
-        <Text style={styles.driverName}>{item.name}</Text>
-        <Text style={styles.driverRating}>⭐ {item.rating}</Text>
-      </View>
-      
-      <Text style={styles.driverVehicle}>{item.vehicle}</Text>
-      <Text style={styles.driverPlate}>Placa: {item.plate}</Text>
-      
-      <View style={styles.driverFooter}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{item.level}</Text>
-        </View>
-        <Text style={styles.driverDistance}>{item.distance.toFixed(1)} km</Text>
-      </View>
-      
-      <View style={styles.feeInfo}>
-        <Text style={styles.feeText}>
-          Taxa: {item.level === 'Veterano' ? '5%' : item.level === 'Intermediário' ? '10%' : '15%'}
-        </Text>
-        <Text style={styles.xpText}>XP: {item.xp}</Text>
-      </View>
+      <Text style={styles.resultIcon}>📍</Text>
+      <Text style={styles.resultText}>{item.address}</Text>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Buscando motoristas próximos...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Obtendo sua localização...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>
-          Motoristas disponíveis ({peers.length})
-        </Text>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={getLocationAndSearch}
-        >
-          <Text style={styles.refreshText}>🔄 Atualizar</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Para onde vamos?</Text>
       </View>
 
-      <FlatList
-        data={peers}
-        renderItem={renderDriverItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Nenhum motorista disponível no momento
+      {/* Origem (automática) */}
+      <View style={styles.locationSection}>
+        <View style={styles.originRow}>
+          <Text style={styles.originIcon}>🔵</Text>
+          <View style={styles.originInfo}>
+            <Text style={styles.originLabel}>Origem (sua localização)</Text>
+            <Text style={styles.originCoords}>
+              {currentLocation.latitude.toFixed(4)}, {currentLocation.longitude.toFixed(4)}
             </Text>
           </View>
-        }
-      />
+        </View>
+      </View>
+
+      {/* Destino (input) */}
+      <View style={styles.destinationSection}>
+        <View style={styles.destinationInputRow}>
+          <Text style={styles.destIcon}>🔴</Text>
+          <TextInput
+            style={styles.destinationInput}
+            placeholder="Digite o destino..."
+            value={destinationText}
+            onChangeText={(text) => {
+              setDestinationText(text);
+              searchAddress(text);
+            }}
+            autoFocus
+          />
+          {searching && <ActivityIndicator size="small" color="#4CAF50" />}
+        </View>
+
+        {/* Resultados da busca */}
+        {searchResults.length > 0 && (
+          <FlatList
+            data={searchResults}
+            renderItem={renderSearchResult}
+            keyExtractor={item => item.id}
+            style={styles.resultsList}
+          />
+        )}
+      </View>
+
+      {/* Estimativa */}
+      {selectedDestination && searchResults.length === 0 && (
+        <View style={styles.estimateSection}>
+          <View style={styles.estimateCard}>
+            <Text style={styles.estimateTitle}>Estimativa da Corrida</Text>
+            
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>📏 Distância:</Text>
+              <Text style={styles.estimateValue}>
+                {calculateDistance().toFixed(1)} km
+              </Text>
+            </View>
+
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>💰 Valor estimado:</Text>
+              <Text style={styles.estimateValue}>
+                R$ {calculateFare(calculateDistance()).toFixed(2)}
+              </Text>
+            </View>
+
+            <Text style={styles.estimateNote}>
+              *Valor final pode variar conforme o nível do motorista escolhido
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.requestButton}
+            onPress={handleRequestRide}
+          >
+            <Text style={styles.requestButtonText}>
+              Solicitar Corrida
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Instruções */}
+      {!selectedDestination && searchResults.length === 0 && (
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsIcon}>💡</Text>
+          <Text style={styles.instructionsTitle}>Como funciona?</Text>
+          <Text style={styles.instructionsText}>
+            1. Digite o endereço de destino{'\n'}
+            2. Veja a estimativa de valor{'\n'}
+            3. Confirme a solicitação{'\n'}
+            4. Motoristas próximos se candidatarão{'\n'}
+            5. Escolha o motorista que preferir
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -173,7 +326,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   loadingText: {
     marginTop: 16,
@@ -181,33 +333,89 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
     backgroundColor: '#fff',
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  headerText: {
-    fontSize: 18,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
   },
-  refreshButton: {
-    padding: 8,
+  locationSection: {
+    backgroundColor: '#fff',
+    padding: 16,
+    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  refreshText: {
+  originRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  originIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  originInfo: {
+    flex: 1,
+  },
+  originLabel: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: '#666',
+    marginBottom: 4,
   },
-  list: {
+  originCoords: {
+    fontSize: 12,
+    color: '#999',
+  },
+  destinationSection: {
+    backgroundColor: '#fff',
+    marginTop: 8,
+  },
+  destinationInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  destIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  destinationInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  resultsList: {
+    maxHeight: 300,
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  resultIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  resultText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  estimateSection: {
     padding: 16,
   },
-  driverCard: {
+  estimateCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -215,78 +423,69 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  driverHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  driverName: {
+  estimateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 16,
   },
-  driverRating: {
-    fontSize: 16,
-    color: '#FFA000',
-  },
-  driverVehicle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  driverPlate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  driverFooter: {
+  estimateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  badge: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+  estimateLabel: {
+    fontSize: 16,
+    color: '#666',
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
+  estimateValue: {
+    fontSize: 18,
     fontWeight: 'bold',
-  },
-  driverDistance: {
-    fontSize: 14,
-    color: '#666',
-  },
-  feeInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  feeText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  xpText: {
-    fontSize: 12,
     color: '#4CAF50',
+  },
+  estimateNote: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  requestButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  requestButtonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  emptyContainer: {
+  instructionsContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
   },
-  emptyText: {
+  instructionsIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  instructionsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  instructionsText: {
     fontSize: 16,
     color: '#666',
-    textAlign: 'center',
+    textAlign: 'left',
+    lineHeight: 28,
   },
 });

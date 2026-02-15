@@ -6,55 +6,186 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  FlatList
+  FlatList,
+  RefreshControl,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useDriver } from '../services/DriverService';
+import NostrService from '../../../shared/services/NostrService';
 
-// warn: No continuous location tracking while online
-// TODO: Implement background location updates
-// TODO: Add map view showing driver's current location
-// FIX: Add battery optimization handling
-// bug: Going offline doesn't clean up location watchers
-
+/**
+ * OnlineScreen - Nova versão: Motorista vê corridas disponíveis e se candidata
+ * 
+ * Fluxo:
+ * 1. Motorista fica online
+ * 2. Subscreve a ride-requests no Nostr
+ * 3. Vê lista de corridas disponíveis
+ * 4. Escolhe se candidatar para uma corrida
+ * 5. Aguarda passageiro aceitar
+ * 6. Se aceito, navega para TripScreen
+ */
 export default function OnlineScreen({ navigation }) {
-  const {
-    driverProfile,
-    isOnline,
-    tripRequests,
-    goOnline,
-    goOffline,
-    acceptTripRequest,
-    rejectTripRequest,
-    setCurrentLocation
-  } = useDriver();
+  const { driverProfile, isOnline, goOnline, goOffline, setCurrentLocation } = useDriver();
 
   const [location, setLocation] = useState(null);
+  const [rideRequests, setRideRequests] = useState([]);
+  const [candidacies, setCandidacies] = useState(new Set());
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    setupLocation();
+    setupOnline();
+    
+    return () => {
+      // Cleanup subscriptions
+      NostrService.unsubscribe('ride-requests');
+      NostrService.unsubscribe(`acceptance-${driverProfile?.id}`);
+    };
   }, []);
 
-  const setupLocation = async () => {
-    // TODO: Request background location permission
-    // FIX: Add error recovery for denied permissions
+  const setupOnline = async () => {
     try {
+      // Obter localização
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Erro', 'Permissão de localização negada');
+        navigation.goBack();
         return;
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation.coords);
       setCurrentLocation(currentLocation.coords);
-      
+
+      // Ficar online
       if (!isOnline) {
-        goOnline(currentLocation.coords);
+        const success = await goOnline(currentLocation.coords);
+        if (!success) {
+          Alert.alert('Erro', 'Não foi possível ficar online');
+          navigation.goBack();
+          return;
+        }
       }
+
+      // Subscrever a ride requests no Nostr
+      console.log('[OnlineScreen] Subscribing to ride requests...');
+      await NostrService.subscribeToRideRequests(currentLocation.coords, (rideRequest) => {
+        console.log('[OnlineScreen] New ride request:', rideRequest.rideId);
+        
+        // Calcular distância
+        const distance = calculateDistance(
+          currentLocation.coords.latitude,
+          currentLocation.coords.longitude,
+          rideRequest.origin.latitude,
+          rideRequest.origin.longitude
+        );
+
+        setRideRequests(prev => {
+          // Evitar duplicatas
+          if (prev.find(r => r.rideId === rideRequest.rideId)) {
+            return prev;
+          }
+          return [...prev, { ...rideRequest, distance }];
+        });
+      });
+
+      // Subscrever a aceitações de passageiros
+      await NostrService.subscribeToAcceptance(driverProfile.id, (acceptance) => {
+        console.log('[OnlineScreen] Driver accepted by passenger!', acceptance);
+        
+        Alert.alert(
+          'Corrida Confirmada! 🎉',
+          'O passageiro aceitou você! Iniciando corrida...',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // TODO: Navegar para TripScreen com dados da corrida
+                navigation.navigate('Trip', { rideId: acceptance.rideId });
+              }
+            }
+          ]
+        );
+      });
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível obter localização');
+      console.error('[OnlineScreen] Setup error:', error);
+      Alert.alert('Erro', 'Erro ao configurar modo online');
+      navigation.goBack();
     }
+  };
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const deg2rad = (deg) => deg * (Math.PI / 180);
+
+  const handleCandidateForRide = async (rideRequest) => {
+    if (candidacies.has(rideRequest.rideId)) {
+      Alert.alert('Atenção', 'Você já se candidatou para esta corrida');
+      return;
+    }
+
+    const estimatedArrival = Math.ceil(rideRequest.distance * 3); // ~3 min per km
+
+    Alert.alert(
+      'Candidatar-se à Corrida',
+      `Passageiro: ${rideRequest.passengerName}\n` +
+      `De: ${rideRequest.origin.address}\n` +
+      `Para: ${rideRequest.destination.address}\n\n` +
+      `Distância até origem: ${rideRequest.distance.toFixed(1)} km\n` +
+      `Chegada estimada: ${estimatedArrival} min\n` +
+      `Valor estimado: R$ ${rideRequest.estimatedFare.toFixed(2)}\n\n` +
+      `Deseja se candidatar?`,
+      [
+        { text: 'Não', style: 'cancel' },
+        {
+          text: 'Sim, candidatar',
+          onPress: async () => {
+            try {
+              console.log('[OnlineScreen] Publishing candidacy...');
+              
+              const result = await NostrService.publishDriverCandidacy(rideRequest.rideId, {
+                driverId: driverProfile.id,
+                driverName: driverProfile.name,
+                vehicle: driverProfile.vehicle,
+                plate: driverProfile.plate,
+                rating: driverProfile.rating,
+                level: driverProfile.level,
+                location: {
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                },
+                estimatedArrival,
+              });
+
+              if (result.success) {
+                setCandidacies(prev => new Set([...prev, rideRequest.rideId]));
+                Alert.alert(
+                  'Candidatura Enviada!',
+                  'Aguarde o passageiro aceitar sua candidatura.'
+                );
+              } else {
+                Alert.alert('Erro', 'Não foi possível enviar candidatura');
+              }
+            } catch (error) {
+              console.error('[OnlineScreen] Candidacy error:', error);
+              Alert.alert('Erro', 'Erro ao enviar candidatura');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleGoOffline = () => {
@@ -65,8 +196,8 @@ export default function OnlineScreen({ navigation }) {
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
-          onPress: () => {
-            goOffline();
+          onPress: async () => {
+            await goOffline();
             navigation.goBack();
           }
         }
@@ -74,70 +205,70 @@ export default function OnlineScreen({ navigation }) {
     );
   };
 
-  const handleAcceptTrip = (requestId) => {
-    const request = tripRequests.find(r => r.id === requestId);
-    Alert.alert(
-      'Aceitar Viagem',
-      `Passageiro: ${request.passengerName}\n` +
-      `Origem: ${request.origin.address}\n` +
-      `Destino: ${request.destination.address}\n` +
-      `Valor estimado: R$ ${request.estimatedFare}`,
-      [
-        { text: 'Recusar', style: 'cancel', onPress: () => rejectTripRequest(requestId) },
-        {
-          text: 'Aceitar',
-          onPress: () => {
-            const accepted = acceptTripRequest(requestId);
-            if (accepted) {
-              navigation.navigate('Trip');
-            }
-          }
-        }
-      ]
-    );
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // TODO: Re-fetch ride requests
+    setRefreshing(false);
   };
 
-  const renderTripRequest = ({ item }) => (
-    <View style={styles.requestCard}>
+  const renderRideRequest = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.requestCard,
+        candidacies.has(item.rideId) && styles.requestCardCandidated
+      ]}
+      onPress={() => handleCandidateForRide(item)}
+    >
       <View style={styles.requestHeader}>
-        <Text style={styles.passengerName}>{item.passengerName}</Text>
-        <Text style={styles.passengerRating}>⭐ {item.passengerRating}</Text>
+        <View>
+          <Text style={styles.passengerName}>{item.passengerName}</Text>
+          <Text style={styles.passengerRating}>⭐ {item.passengerRating}</Text>
+        </View>
+        <View style={styles.distanceBadge}>
+          <Text style={styles.distanceText}>{item.distance.toFixed(1)} km</Text>
+        </View>
       </View>
 
-      <View style={styles.requestInfo}>
-        <Text style={styles.label}>Origem:</Text>
-        <Text style={styles.address}>{item.origin.address}</Text>
+      <View style={styles.routeContainer}>
+        <View style={styles.locationRow}>
+          <Text style={styles.locationIcon}>🔵</Text>
+          <Text style={styles.locationText} numberOfLines={1}>
+            {item.origin.address}
+          </Text>
+        </View>
+        <View style={styles.locationRow}>
+          <Text style={styles.locationIcon}>🔴</Text>
+          <Text style={styles.locationText} numberOfLines={1}>
+            {item.destination.address}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.requestInfo}>
-        <Text style={styles.label}>Destino:</Text>
-        <Text style={styles.address}>{item.destination.address}</Text>
+      <View style={styles.requestFooter}>
+        <View style={styles.fareInfo}>
+          <Text style={styles.fareLabel}>Valor estimado:</Text>
+          <Text style={styles.fareValue}>R$ {item.estimatedFare.toFixed(2)}</Text>
+        </View>
+        <Text style={styles.distanceInfo}>
+          📏 {item.estimatedDistance.toFixed(1)} km
+        </Text>
       </View>
 
-      <View style={styles.fareRow}>
-        <Text style={styles.fareLabel}>Valor estimado:</Text>
-        <Text style={styles.fareValue}>R$ {item.estimatedFare}</Text>
-      </View>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.rejectButton}
-          onPress={() => rejectTripRequest(item.id)}
-        >
-          <Text style={styles.rejectButtonText}>Recusar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.acceptButton}
-          onPress={() => handleAcceptTrip(item.id)}
-        >
-          <Text style={styles.acceptButtonText}>Aceitar</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      {candidacies.has(item.rideId) ? (
+        <View style={styles.candidatedButton}>
+          <Text style={styles.candidatedButtonText}>✓ Candidatura Enviada</Text>
+        </View>
+      ) : (
+        <View style={styles.candidateButton}>
+          <Text style={styles.candidateButtonText}>Me Candidatar</Text>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Status Bar */}
       <View style={styles.statusBar}>
         <View style={styles.statusIndicator}>
           <View style={styles.onlineDot} />
@@ -151,35 +282,47 @@ export default function OnlineScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Driver Info */}
       <View style={styles.driverInfo}>
-        <Text style={styles.driverName}>{driverProfile.name}</Text>
-        <Text style={styles.driverLevel}>{driverProfile.level} • Taxa: {driverProfile.level === 'Veterano' ? '5%' : driverProfile.level === 'Intermediário' ? '10%' : '15%'}</Text>
+        <Text style={styles.driverName}>{driverProfile?.name}</Text>
+        <Text style={styles.driverLevel}>
+          {driverProfile?.level} • Taxa: {
+            driverProfile?.level === 'Veterano' ? '5%' :
+            driverProfile?.level === 'Intermediário' ? '10%' : '15%'
+          }
+        </Text>
         <Text style={styles.locationText}>
           📍 {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 'Obtendo localização...'}
         </Text>
       </View>
 
+      {/* Ride Requests */}
       <View style={styles.requestsContainer}>
-        <Text style={styles.requestsTitle}>
-          Solicitações ({tripRequests.length})
-        </Text>
+        <View style={styles.requestsHeader}>
+          <Text style={styles.requestsTitle}>
+            Corridas Disponíveis ({rideRequests.length})
+          </Text>
+        </View>
         
-        {tripRequests.length === 0 ? (
+        {rideRequests.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🔍</Text>
             <Text style={styles.emptyText}>
-              Aguardando solicitações de passageiros...
+              Nenhuma corrida disponível no momento
             </Text>
             <Text style={styles.emptySubtext}>
-              Você está visível na rede P2P
+              Aguardando solicitações via rede P2P Nostr
             </Text>
           </View>
         ) : (
           <FlatList
-            data={tripRequests}
-            renderItem={renderTripRequest}
-            keyExtractor={item => item.id}
+            data={rideRequests}
+            renderItem={renderRideRequest}
+            keyExtractor={item => item.rideId}
             contentContainerStyle={styles.requestsList}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
           />
         )}
       </View>
@@ -249,27 +392,37 @@ const styles = StyleSheet.create({
   },
   requestsContainer: {
     flex: 1,
+  },
+  requestsHeader: {
     padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   requestsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 16,
   },
   requestsList: {
-    paddingBottom: 16,
+    padding: 16,
   },
   requestCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  requestCardCandidated: {
+    borderColor: '#FFA000',
+    backgroundColor: '#FFF9E6',
   },
   requestHeader: {
     flexDirection: 'row',
@@ -281,69 +434,87 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 4,
   },
   passengerRating: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#FFA000',
   },
-  requestInfo: {
+  distanceBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  distanceText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+  },
+  routeContainer: {
+    marginBottom: 12,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  label: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+  locationIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
-  address: {
+  locationText: {
+    flex: 1,
     fontSize: 14,
     color: '#333',
   },
-  fareRow: {
+  requestFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  fareInfo: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   fareLabel: {
     fontSize: 14,
     color: '#666',
+    marginRight: 8,
   },
   fareValue: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4CAF50',
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
+  distanceInfo: {
+    fontSize: 14,
+    color: '#666',
   },
-  rejectButton: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#f44336',
+  candidateButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
     borderRadius: 8,
-    padding: 12,
     alignItems: 'center',
   },
-  rejectButtonText: {
-    color: '#f44336',
-    fontSize: 14,
+  candidateButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  acceptButton: {
-    flex: 1,
-    backgroundColor: '#4CAF50',
+  candidatedButton: {
+    backgroundColor: '#FFA000',
+    paddingVertical: 12,
     borderRadius: 8,
-    padding: 12,
     alignItems: 'center',
   },
-  acceptButtonText: {
+  candidatedButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   emptyState: {

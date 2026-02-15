@@ -10,6 +10,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import SearchScreen from './src/screens/SearchScreen';
+import RideWaitingScreen from './src/screens/RideWaitingScreen';
 import TripScreen from './src/screens/TripScreen';
 import PaymentScreen from './src/screens/PaymentScreen';
 import PassengerRegistrationScreen from './src/screens/PassengerRegistrationScreen';
@@ -65,6 +66,14 @@ export default function App() {
               name="Search" 
               component={SearchScreen}
               options={{ title: 'Buscar Motorista' }}
+            />
+            <Stack.Screen 
+              name="RideWaiting" 
+              component={RideWaitingScreen}
+              options={{ 
+                title: 'Aguardando Motorista',
+                headerLeft: null,
+              }}
             />
             <Stack.Screen 
               name="Trip" 

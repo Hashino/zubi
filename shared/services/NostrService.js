@@ -218,24 +218,286 @@ class NostrService {
   }
 
   /**
-   * Envia solicitação de corrida (Kind 4 - Encrypted Direct Message)
+   * Publica solicitação de corrida pública (Kind 30079 - Parameterized Replaceable)
+   * Motoristas podem ver e se candidatar
    */
-  async sendRideRequest(driverPublicKey, rideData) {
+  async publishRideRequest(rideData) {
+    console.log('[NostrService] publishRideRequest called:', rideData);
+
     const content = JSON.stringify({
-      type: 'ride_request',
+      passengerId: rideData.passengerId,
       passengerName: rideData.passengerName,
+      passengerRating: rideData.passengerRating,
       origin: rideData.origin,
       destination: rideData.destination,
+      estimatedDistance: rideData.estimatedDistance,
       estimatedFare: rideData.estimatedFare,
       timestamp: Date.now(),
     });
 
     const tags = [
-      ['p', driverPublicKey],
+      ['d', rideData.rideId], // identificador único (torna evento replaceable)
       ['t', 'ride-request'],
+      ['geohash', this.getGeohash(rideData.origin)],
+      ['status', 'searching'], // searching | matched | cancelled
     ];
 
-    return await this.publishEvent(4, content, tags);
+    const result = await this.publishEvent(30079, content, tags);
+    console.log('[NostrService] publishRideRequest result:', result);
+    return result;
+  }
+
+  /**
+   * Motorista se candidata para uma corrida (Kind 30080 - Parameterized Replaceable)
+   */
+  async publishDriverCandidacy(rideId, driverData) {
+    console.log('[NostrService] publishDriverCandidacy:', { rideId, driverId: driverData.driverId });
+
+    const content = JSON.stringify({
+      driverId: driverData.driverId,
+      driverName: driverData.driverName,
+      vehicle: driverData.vehicle,
+      plate: driverData.plate,
+      rating: driverData.rating,
+      level: driverData.level,
+      location: driverData.location,
+      estimatedArrival: driverData.estimatedArrival,
+      timestamp: Date.now(),
+    });
+
+    const tags = [
+      ['d', `${rideId}_${driverData.driverId}`], // identificador único
+      ['t', 'driver-candidacy'],
+      ['e', rideId], // referência à corrida
+      ['level', driverData.level],
+    ];
+
+    const result = await this.publishEvent(30080, content, tags);
+    console.log('[NostrService] publishDriverCandidacy result:', result);
+    return result;
+  }
+
+  /**
+   * Passageiro aceita um motorista (Kind 1 - Regular event)
+   */
+  async publishDriverAcceptance(rideId, driverId) {
+    console.log('[NostrService] publishDriverAcceptance:', { rideId, driverId });
+
+    const content = JSON.stringify({
+      type: 'driver-accepted',
+      rideId,
+      driverId,
+      timestamp: Date.now(),
+    });
+
+    const tags = [
+      ['t', 'driver-accepted'],
+      ['e', rideId],
+      ['p', driverId], // notifica o motorista
+    ];
+
+    return await this.publishEvent(1, content, tags);
+  }
+
+  /**
+   * Busca candidatos para uma corrida específica
+   */
+  async getRideCandidates(rideId) {
+    try {
+      console.log('[NostrService] getRideCandidates for:', rideId);
+
+      if (!this.pool) {
+        await this.connect();
+      }
+
+      const filters = [{
+        kinds: [30080],
+        '#t': ['driver-candidacy'],
+        '#e': [rideId],
+        limit: 20,
+      }];
+
+      console.log('[NostrService] Querying candidates with filters:', JSON.stringify(filters));
+
+      const events = await this.pool.list(this.relays, filters);
+      
+      console.log(`[NostrService] Received ${events.length} candidate events`);
+      
+      const candidates = [];
+      for (const event of events) {
+        if (!verifySignature(event)) {
+          console.warn('[NostrService] Invalid signature for candidate:', event.id);
+          continue;
+        }
+        
+        try {
+          const candidateData = JSON.parse(event.content);
+          candidates.push({
+            ...candidateData,
+            eventId: event.id,
+            publicKey: event.pubkey,
+          });
+        } catch (e) {
+          console.warn('[NostrService] Invalid candidate event:', e);
+        }
+      }
+
+      console.log(`[NostrService] Found ${candidates.length} valid candidates`);
+      return { success: true, candidates };
+    } catch (error) {
+      console.error('[NostrService] getRideCandidates failed:', error);
+      return { success: false, error: error.message, candidates: [] };
+    }
+  }
+
+  /**
+   * Subscreve a corridas disponíveis (para motoristas)
+   */
+  async subscribeToRideRequests(locationFilter, callback) {
+    try {
+      console.log('[NostrService] subscribeToRideRequests called');
+
+      if (!this.pool) {
+        await this.connect();
+      }
+
+      const filters = [{
+        kinds: [30079],
+        '#t': ['ride-request'],
+        '#status': ['searching'],
+        since: Math.floor(Date.now() / 1000) - 300, // últimos 5 minutos
+      }];
+
+      console.log('[NostrService] Subscribing to ride requests with filters:', JSON.stringify(filters));
+
+      const sub = this.pool.sub(this.relays, filters);
+      
+      sub.on('event', (event) => {
+        console.log('[NostrService] Received ride request event:', event.id);
+        if (verifySignature(event)) {
+          try {
+            const rideData = JSON.parse(event.content);
+            const rideIdTag = event.tags.find(t => t[0] === 'd');
+            
+            if (rideIdTag) {
+              callback({
+                ...rideData,
+                rideId: rideIdTag[1],
+                eventId: event.id,
+              });
+            }
+          } catch (e) {
+            console.warn('[NostrService] Invalid ride request event:', e);
+          }
+        }
+      });
+      
+      sub.on('eose', () => {
+        console.log('[NostrService] Ride requests subscription established');
+      });
+
+      this.subscriptions.set('ride-requests', sub);
+      return { success: true };
+    } catch (error) {
+      console.error('[NostrService] subscribeToRideRequests failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Subscreve a candidaturas para uma corrida (para passageiros)
+   */
+  async subscribeToCandidates(rideId, callback) {
+    try {
+      console.log('[NostrService] subscribeToCandidates for:', rideId);
+
+      if (!this.pool) {
+        await this.connect();
+      }
+
+      const filters = [{
+        kinds: [30080],
+        '#t': ['driver-candidacy'],
+        '#e': [rideId],
+        since: Math.floor(Date.now() / 1000) - 300, // últimos 5 minutos
+      }];
+
+      console.log('[NostrService] Subscribing to candidates with filters:', JSON.stringify(filters));
+
+      const sub = this.pool.sub(this.relays, filters);
+      
+      sub.on('event', (event) => {
+        console.log('[NostrService] Received candidate event:', event.id);
+        if (verifySignature(event)) {
+          try {
+            const candidateData = JSON.parse(event.content);
+            callback({
+              ...candidateData,
+              eventId: event.id,
+              publicKey: event.pubkey,
+            });
+          } catch (e) {
+            console.warn('[NostrService] Invalid candidate event:', e);
+          }
+        }
+      });
+      
+      sub.on('eose', () => {
+        console.log('[NostrService] Candidates subscription established');
+      });
+
+      this.subscriptions.set(`candidates-${rideId}`, sub);
+      return { success: true };
+    } catch (error) {
+      console.error('[NostrService] subscribeToCandidates failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Subscreve a aceitação de motorista (para motoristas)
+   */
+  async subscribeToAcceptance(driverId, callback) {
+    try {
+      console.log('[NostrService] subscribeToAcceptance for driver:', driverId);
+
+      if (!this.pool) {
+        await this.connect();
+      }
+
+      const filters = [{
+        kinds: [1],
+        '#t': ['driver-accepted'],
+        '#p': [driverId],
+        since: Math.floor(Date.now() / 1000) - 300,
+      }];
+
+      const sub = this.pool.sub(this.relays, filters);
+      
+      sub.on('event', (event) => {
+        console.log('[NostrService] Received acceptance event:', event.id);
+        if (verifySignature(event)) {
+          try {
+            const data = JSON.parse(event.content);
+            if (data.type === 'driver-accepted' && data.driverId === driverId) {
+              callback(data);
+            }
+          } catch (e) {
+            console.warn('[NostrService] Invalid acceptance event:', e);
+          }
+        }
+      });
+      
+      sub.on('eose', () => {
+        console.log('[NostrService] Acceptance subscription established');
+      });
+
+      this.subscriptions.set(`acceptance-${driverId}`, sub);
+      return { success: true };
+    } catch (error) {
+      console.error('[NostrService] subscribeToAcceptance failed:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   /**

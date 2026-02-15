@@ -92,6 +92,9 @@ export default function OnlineScreen({ navigation }) {
       await NostrService.subscribeToAcceptance(driverProfile.id, (acceptance) => {
         console.log('[OnlineScreen] Driver accepted by passenger!', acceptance);
         
+        // Encontra os dados da corrida aceita
+        const acceptedRide = rideRequests.find(r => r.rideId === acceptance.rideId);
+        
         Alert.alert(
           'Corrida Confirmada! 🎉',
           'O passageiro aceitou você! Iniciando corrida...',
@@ -99,8 +102,24 @@ export default function OnlineScreen({ navigation }) {
             {
               text: 'OK',
               onPress: () => {
-                // TODO: Navegar para TripScreen com dados da corrida
-                navigation.navigate('Trip', { rideId: acceptance.rideId });
+                // Navega para TripScreen passando os dados completos da corrida
+                if (acceptedRide) {
+                  navigation.navigate('Trip', {
+                    ride: {
+                      id: acceptedRide.rideId,
+                      passengerName: acceptedRide.passengerName,
+                      passengerRating: acceptedRide.passengerRating,
+                      origin: acceptedRide.origin,
+                      destination: acceptedRide.destination,
+                      estimatedFare: acceptedRide.estimatedFare,
+                      estimatedDistance: acceptedRide.estimatedDistance,
+                      status: 'MATCHED',
+                    }
+                  });
+                } else {
+                  // Fallback se não encontrar
+                  navigation.navigate('Trip', { rideId: acceptance.rideId });
+                }
               }
             }
           ]

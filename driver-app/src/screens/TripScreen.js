@@ -20,9 +20,13 @@ import ChatComponent from '../../shared/components/ChatComponent';
 // warn: No validation counting mechanism - validationCount is never incremented
 // bug: QR code doesn't refresh periodically (security issue)
 
-export default function TripScreen({ navigation }) {
+export default function TripScreen({ route, navigation }) {
+  const { ride } = route.params || {};
   const { driverProfile, generatePresenceQRCode } = useDriver();
   const { activeRide, completeRide } = useApp();
+  
+  // Use activeRide from context if available, otherwise use route params
+  const currentRide = activeRide || ride;
   
   const [tripStatus, setTripStatus] = useState('going_to_passenger'); // going_to_passenger, in_progress, finishing
   const [qrData, setQrData] = useState(null);
@@ -32,11 +36,11 @@ export default function TripScreen({ navigation }) {
   useEffect(() => {
     // TODO: Regenerate QR code every 30 seconds for security
     // FIX: Clean up interval on component unmount
-    if (activeRide) {
+    if (currentRide) {
       const data = generatePresenceQRCode();
       setQrData(data);
     }
-  }, [activeRide]);
+  }, [currentRide]);
 
   const handleStartTrip = () => {
     Alert.alert(
@@ -59,11 +63,11 @@ export default function TripScreen({ navigation }) {
   };
 
   const handleFinishTrip = () => {
-    if (!activeRide) return;
+    if (!currentRide) return;
     
     Alert.alert(
       'Finalizar Viagem',
-      `Confirma que chegou ao destino?\n\nValor: R$ ${activeRide.estimatedFare?.toFixed(2)}\nValidações: ${validationCount}`,
+      `Confirma que chegou ao destino?\n\nValor: R$ ${currentRide.estimatedFare?.toFixed(2)}\nValidações: ${validationCount}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -72,18 +76,18 @@ export default function TripScreen({ navigation }) {
             setTripStatus('finishing');
             
             try {
-              await completeRide(activeRide.id);
+              await completeRide(currentRide.id);
               
               // Calculate earnings
               const feePercent = driverProfile.level === 'Veterano' ? 0.05 : 
                                 driverProfile.level === 'Intermediário' ? 0.10 : 0.15;
-              const fee = activeRide.estimatedFare * feePercent;
-              const earning = activeRide.estimatedFare - fee;
+              const fee = currentRide.estimatedFare * feePercent;
+              const earning = currentRide.estimatedFare - fee;
 
               Alert.alert(
                 'Viagem Finalizada',
                 `Pagamento recebido!\n\n` +
-                `Valor bruto: R$ ${activeRide.estimatedFare.toFixed(2)}\n` +
+                `Valor bruto: R$ ${currentRide.estimatedFare.toFixed(2)}\n` +
                 `Taxa (${(feePercent * 100).toFixed(0)}%): R$ ${fee.toFixed(2)}\n` +
                 `Seu ganho: R$ ${earning.toFixed(2)}\n\n` +
                 `+10 XP ganhos!`,
@@ -104,7 +108,7 @@ export default function TripScreen({ navigation }) {
     );
   };
 
-  if (!activeRide) {
+  if (!currentRide) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
@@ -133,8 +137,8 @@ export default function TripScreen({ navigation }) {
 
         <View style={styles.passengerCard}>
           <Text style={styles.cardTitle}>Passageiro</Text>
-          <Text style={styles.passengerName}>{activeRide.passengerName || 'Passageiro'}</Text>
-          <Text style={styles.passengerRating}>⭐ {activeRide.passengerRating || '5.0'}</Text>
+          <Text style={styles.passengerName}>{currentRide.passengerName || 'Passageiro'}</Text>
+          <Text style={styles.passengerRating}>⭐ {currentRide.passengerRating || '5.0'}</Text>
         </View>
 
         <View style={styles.tripCard}>
@@ -142,30 +146,30 @@ export default function TripScreen({ navigation }) {
           
           <View style={styles.locationInfo}>
             <Text style={styles.locationLabel}>📍 Origem</Text>
-            <Text style={styles.locationAddress}>{activeRide.origin?.address || 'Origem'}</Text>
+            <Text style={styles.locationAddress}>{currentRide.origin?.address || 'Origem'}</Text>
           </View>
 
           <View style={styles.locationInfo}>
             <Text style={styles.locationLabel}>🎯 Destino</Text>
-            <Text style={styles.locationAddress}>{activeRide.destination?.address || 'Destino'}</Text>
+            <Text style={styles.locationAddress}>{currentRide.destination?.address || 'Destino'}</Text>
           </View>
 
           <View style={styles.fareInfo}>
             <Text style={styles.fareLabel}>Valor:</Text>
-            <Text style={styles.fareValue}>R$ {activeRide.estimatedFare?.toFixed(2)}</Text>
+            <Text style={styles.fareValue}>R$ {currentRide.estimatedFare?.toFixed(2)}</Text>
           </View>
 
           <View style={styles.feeInfo}>
             <Text style={styles.feeLabel}>Taxa ({driverProfile.level === 'Veterano' ? '5%' : driverProfile.level === 'Intermediário' ? '10%' : '15%'}):</Text>
             <Text style={styles.feeValue}>
-              R$ {(parseFloat(activeRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15)).toFixed(2)}
+              R$ {(parseFloat(currentRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15)).toFixed(2)}
             </Text>
           </View>
 
           <View style={styles.earningInfo}>
             <Text style={styles.earningLabel}>Seu ganho:</Text>
             <Text style={styles.earningValue}>
-              R$ {(parseFloat(activeRide.estimatedFare || 0) - (parseFloat(activeRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15))).toFixed(2)}
+              R$ {(parseFloat(currentRide.estimatedFare || 0) - (parseFloat(currentRide.estimatedFare || 0) * (driverProfile.level === 'Veterano' ? 0.05 : driverProfile.level === 'Intermediário' ? 0.10 : 0.15))).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -229,7 +233,7 @@ export default function TripScreen({ navigation }) {
         presentationStyle="pageSheet"
       >
         <ChatComponent
-          tripId={activeRide?.id}
+          tripId={currentRide?.id}
           userType="driver"
           userName={driverProfile.name}
           onClose={() => setShowChat(false)}

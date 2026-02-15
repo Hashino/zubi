@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AuthService from '../../shared/services/AuthService';
+import AuthService from '../../../shared/services/AuthService';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');

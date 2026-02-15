@@ -251,6 +251,7 @@ export const DriverProvider = ({ children }) => {
       currentLocation,
       tripRequests,
       activeTrip,
+      loadDriverProfile,
       goOnline,
       goOffline,
       acceptTripRequest,

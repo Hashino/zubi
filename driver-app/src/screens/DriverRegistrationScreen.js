@@ -12,12 +12,14 @@ import {
 import AuthService from '../../../shared/services/AuthService';
 import KeyManagementService from '../../../shared/services/KeyManagementService';
 import StorageService from '../../../shared/services/StorageService';
+import { useDriver } from '../services/DriverService';
 
 /**
  * DriverRegistrationScreen - Cadastro completo de motorista com verificação de identidade
  * Implementa o sistema de Identidade Soberana do PMCD
  */
 export default function DriverRegistrationScreen({ navigation }) {
+  const { loadDriverProfile } = useDriver();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -158,6 +160,9 @@ export default function DriverRegistrationScreen({ navigation }) {
       };
 
       await StorageService.saveDriverProfile(driverProfile);
+
+      // Reload the driver profile in context
+      await loadDriverProfile();
 
       Alert.alert(
         'Cadastro Realizado!',

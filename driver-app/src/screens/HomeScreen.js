@@ -28,6 +28,25 @@ export default function HomeScreen({ navigation }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  // Se não há perfil, redireciona para registro
+  useEffect(() => {
+    if (!driverProfile) {
+      console.log('[HomeScreen] No driver profile, redirecting to Registration');
+      navigation.replace('Registration');
+    }
+  }, [driverProfile, navigation]);
+
+  // Loading state enquanto perfil carrega
+  if (!driverProfile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Carregando perfil...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   const achievements = [];
   const recentTrips = [];
@@ -67,20 +86,20 @@ export default function HomeScreen({ navigation }) {
   }, [activeRide, navigation]);
 
   const getLevelProgress = () => {
-    const nextLevelXp = driverProfile.level === 'Iniciante' ? 500 : driverProfile.level === 'Intermediário' ? 1000 : 2000;
-    return Math.min((driverProfile.xp / nextLevelXp) * 100, 100);
+    const nextLevelXp = driverProfile?.level === 'Iniciante' ? 500 : driverProfile?.level === 'Intermediário' ? 1000 : 2000;
+    return Math.min(((driverProfile?.xp || 0) / nextLevelXp) * 100, 100);
   };
 
   const getFeePercentage = () => {
-    return driverProfile.level === 'Veterano' ? '5%' : driverProfile.level === 'Intermediário' ? '10%' : '15%';
+    return driverProfile?.level === 'Veterano' ? '5%' : driverProfile?.level === 'Intermediário' ? '10%' : '15%';
   };
 
   const getLevelColor = () => {
-    return driverProfile.level === 'Veterano' ? '#FFD700' : driverProfile.level === 'Intermediário' ? '#C0C0C0' : '#CD7F32';
+    return driverProfile?.level === 'Veterano' ? '#FFD700' : driverProfile?.level === 'Intermediário' ? '#C0C0C0' : '#CD7F32';
   };
 
   const getLevelEmoji = () => {
-    return driverProfile.level === 'Veterano' ? '🥇' : driverProfile.level === 'Intermediário' ? '🥈' : '🥉';
+    return driverProfile?.level === 'Veterano' ? '🥇' : driverProfile?.level === 'Intermediário' ? '🥈' : '🥉';
   };
 
   const getMotivationalMessage = () => {
@@ -188,11 +207,11 @@ export default function HomeScreen({ navigation }) {
           end={{ x: 1, y: 1 }}
           style={styles.profileCard}
         >
-          <Text style={styles.greeting}>Olá, {driverProfile.name}! 👋</Text>
+          <Text style={styles.greeting}>Olá, {driverProfile?.name || 'Motorista'}! 👋</Text>
           <View style={[styles.levelBadge, { backgroundColor: getLevelColor() }]}>
-            <Text style={styles.levelText}>{getLevelEmoji()} {driverProfile.level}</Text>
+            <Text style={styles.levelText}>{getLevelEmoji()} {driverProfile?.level || 'Iniciante'}</Text>
           </View>
-          <Text style={styles.xpText}>{driverProfile.xp} XP</Text>
+          <Text style={styles.xpText}>{driverProfile?.xp || 0} XP</Text>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${getLevelProgress()}%` }]} />
           </View>
@@ -209,19 +228,19 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.statsGrid}>
           <Animated.View style={[styles.statCard, { transform: [{ scale: pulseAnim }] }]}>
             <Text style={styles.statEmoji}>🚗</Text>
-            <Text style={styles.statNumber}>{driverProfile.totalTrips}</Text>
+            <Text style={styles.statNumber}>{driverProfile?.totalTrips || 0}</Text>
             <Text style={styles.statLabel}>Viagens</Text>
           </Animated.View>
           
           <View style={styles.statCard}>
             <Text style={styles.statEmoji}>⭐</Text>
-            <Text style={styles.statNumber}>{driverProfile.rating}</Text>
+            <Text style={styles.statNumber}>{driverProfile?.rating || 5.0}</Text>
             <Text style={styles.statLabel}>Avaliação</Text>
           </View>
           
           <View style={styles.statCard}>
             <Text style={styles.statEmoji}>💰</Text>
-            <Text style={styles.statNumber}>R$ {driverProfile.totalEarnings.toFixed(0)}</Text>
+            <Text style={styles.statNumber}>R$ {(driverProfile?.totalEarnings || 0).toFixed(0)}</Text>
             <Text style={styles.statLabel}>Ganhos</Text>
           </View>
         </View>
@@ -247,8 +266,8 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.cardIcon}>🚙</Text>
             <Text style={styles.cardTitle}>Veículo</Text>
           </View>
-          <Text style={styles.vehicleInfo}>{driverProfile.vehicle}</Text>
-          <Text style={styles.vehiclePlate}>Placa: {driverProfile.plate}</Text>
+          <Text style={styles.vehicleInfo}>{driverProfile?.vehicle || 'Não informado'}</Text>
+          <Text style={styles.vehiclePlate}>Placa: {driverProfile?.plate || 'N/A'}</Text>
           <View style={styles.feeInfo}>
             <Text style={styles.feeLabel}>Taxa atual:</Text>
             <Text style={styles.feeValue}>{getFeePercentage()}</Text>
@@ -380,6 +399,17 @@ const darkTheme = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
   },
   topBar: {
     flexDirection: 'row',

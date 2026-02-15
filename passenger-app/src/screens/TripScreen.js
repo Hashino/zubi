@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useP2P } from '../services/P2PService';
 import { useApp } from '../../../shared/contexts/AppContext';
-import ChatComponent from '../../shared/components/ChatComponent';
+import ChatComponent from '../../../shared/components/ChatComponent';
 
 // TODO: Re-implement QR code scanning for presence validation
 // The Camera component was removed to fix build issues

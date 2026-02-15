@@ -1,8 +1,16 @@
 import * as NostrTools from 'nostr-tools';
-import { hexToBytes } from '@noble/hashes/utils';
 import KeyManagementService from './KeyManagementService';
 
-const { SimplePool, finalizeEvent, verifySignature } = NostrTools;
+const { SimplePool, finishEvent, verifySignature, getEventHash, signEvent } = NostrTools;
+
+// Helper function to convert hex string to bytes
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
 
 // Polyfill WebSocket para React Native
 if (typeof WebSocket === 'undefined') {
@@ -67,20 +75,28 @@ class NostrService {
 
       const privateKeyBytes = hexToBytes(KeyManagementService.privateKey);
 
-      // Cria evento Nostr
-      const event = finalizeEvent({
+      // Cria evento Nostr usando a API do nostr-tools 1.17.0
+      const event = finishEvent({
         kind,
         created_at: Math.floor(Date.now() / 1000),
         tags,
         content,
-      }, privateKeyBytes);
+      }, KeyManagementService.privateKey); // finishEvent aceita hex string diretamente
 
-      // Publica em todos os relays
-      await Promise.any(
-        this.pool.publish(this.relays, event)
-      );
+      console.log('[NostrService] Publishing event to relays:', {
+        eventId: event.id,
+        kind: event.kind,
+        relaysCount: this.relays.length,
+      });
 
-      console.log('[NostrService] Event published:', event.id);
+      // Publica em todos os relays - pool.publish retorna array de promises
+      const publishPromises = this.pool.publish(this.relays, event);
+      
+      // Aguarda pelo menos um relay aceitar (Promise.any)
+      // ou todos falharem (lança AggregateError)
+      await Promise.any(publishPromises);
+
+      console.log('[NostrService] Event published successfully:', event.id);
       return { success: true, eventId: event.id };
     } catch (error) {
       console.error('[NostrService] Publish failed:', error);
@@ -92,6 +108,12 @@ class NostrService {
    * Anuncia disponibilidade do motorista (Kind 30078 - Parameterized Replaceable)
    */
   async announceDriver(driverData) {
+    console.log('[NostrService] announceDriver called with:', {
+      driverId: driverData.driverId,
+      location: driverData.location,
+      name: driverData.name,
+    });
+
     const content = JSON.stringify({
       name: driverData.name,
       vehicle: driverData.vehicle,
@@ -109,7 +131,10 @@ class NostrService {
       ['level', driverData.level.toString()],
     ];
 
-    return await this.publishEvent(30078, content, tags);
+    console.log('[NostrService] Publishing driver event with tags:', JSON.stringify(tags));
+    const result = await this.publishEvent(30078, content, tags);
+    console.log('[NostrService] announceDriver result:', result);
+    return result;
   }
 
   /**
@@ -117,7 +142,14 @@ class NostrService {
    */
   async findNearbyDrivers(passengerLocation, radiusKm = 5) {
     try {
+      console.log('[NostrService] findNearbyDrivers called:', {
+        location: passengerLocation,
+        radiusKm,
+        poolExists: !!this.pool,
+      });
+
       if (!this.pool) {
+        console.log('[NostrService] Pool not initialized, connecting...');
         await this.connect();
       }
 
@@ -129,12 +161,27 @@ class NostrService {
         limit: 50,
       }];
 
+      console.log('[NostrService] Querying relays with filters:', JSON.stringify(filters));
+      console.log('[NostrService] Relays:', this.relays);
+
       const events = await this.pool.list(this.relays, filters);
+      
+      console.log(`[NostrService] Received ${events.length} events from relays`);
       
       // Filtra por distância real e verifica eventos
       const drivers = [];
       for (const event of events) {
-        if (!verifySignature(event)) continue;
+        console.log('[NostrService] Processing event:', {
+          id: event.id,
+          kind: event.kind,
+          tags: event.tags,
+          pubkey: event.pubkey.substring(0, 16) + '...',
+        });
+
+        if (!verifySignature(event)) {
+          console.warn('[NostrService] Invalid signature for event:', event.id);
+          continue;
+        }
         
         try {
           const driverData = JSON.parse(event.content);
@@ -142,6 +189,12 @@ class NostrService {
             passengerLocation,
             driverData.location
           );
+          
+          console.log('[NostrService] Driver distance:', {
+            name: driverData.name,
+            distance: distance.toFixed(2) + 'km',
+            withinRadius: distance <= radiusKm,
+          });
           
           if (distance <= radiusKm) {
             drivers.push({
@@ -156,7 +209,7 @@ class NostrService {
         }
       }
 
-      console.log(`[NostrService] Found ${drivers.length} nearby drivers`);
+      console.log(`[NostrService] Found ${drivers.length} nearby drivers within ${radiusKm}km`);
       return { success: true, drivers: drivers.sort((a, b) => a.distance - b.distance) };
     } catch (error) {
       console.error('[NostrService] Find drivers failed:', error);

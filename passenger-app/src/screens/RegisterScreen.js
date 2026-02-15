@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AuthService from '../../shared/services/AuthService';
+import AuthService from '../../../shared/services/AuthService';
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');

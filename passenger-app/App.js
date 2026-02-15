@@ -1,3 +1,6 @@
+// Polyfill for crypto.getRandomValues required by nostr-tools
+import 'react-native-get-random-values';
+
 // Polyfill for TextEncoder/TextDecoder required by nostr-tools
 import 'text-encoding';
 

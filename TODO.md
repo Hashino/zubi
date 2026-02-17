@@ -15,7 +15,7 @@
 
 ### Driver App
 - [ ] **BLOCKER**: Criar projeto EAS
-  - Ver instruções em [BUILD_STATUS.md](./BUILD_STATUS.md)
+  - Ver instruções em [DEVELOPMENT.md](./DEVELOPMENT.md)
   - Necessário para gerar APK
 
 ## 🟡 HIGH PRIORITY (Para Produção)

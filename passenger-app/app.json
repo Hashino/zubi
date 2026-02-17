@@ -45,6 +45,9 @@
       "eas": {
         "projectId": "f2d9e42c-07a2-41db-a5ed-6d48b48a0fa1"
       }
+    },
+    "packagerOpts": {
+      "port": 8092
     }
   }
 }

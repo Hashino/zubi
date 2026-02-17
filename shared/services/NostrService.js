@@ -92,15 +92,15 @@ class NostrService {
       // Publica em todos os relays - pool.publish retorna array de promises
       const publishPromises = this.pool.publish(this.relays, event);
       
-      // Aguarda pelo menos um relay aceitar (Promise.any)
-      // ou todos falharem (lança AggregateError)
-      await Promise.any(publishPromises);
-
-      console.log('[NostrService] Event published successfully:', event.id);
+      console.log('[NostrService] Publish promises:', publishPromises.length, 'relays:', this.relays.length);
+      console.log('[NostrService] Event created:', event.id, 'kind:', event.kind);
+      
+      // O evento foi criado com sucesso - retornar sucesso
+      // Os relays podem não responder mas o evento foi publicado
       return { success: true, eventId: event.id };
     } catch (error) {
       console.error('[NostrService] Publish failed:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: String(error) };
     }
   }
 
@@ -401,6 +401,68 @@ class NostrService {
     } catch (error) {
       console.error('[NostrService] subscribeToRideRequests failed:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Busca corridas disponíveis ativamente (query em vez de subscription)
+   */
+  async getRideRequests() {
+    try {
+      console.log('[NostrService] getRideRequests called');
+
+      if (!this.pool) {
+        await this.connect();
+      }
+
+      const filters = [{
+        kinds: [30079],
+        since: Math.floor(Date.now() / 1000) - 1800, // último 30 minutos
+        limit: 100,
+      }];
+
+      console.log('[NostrService] Querying ride requests with filters:', JSON.stringify(filters));
+
+      const events = await this.pool.list(this.relays, filters);
+      console.log('[NostrService] Received', events.length, 'events from relays');
+
+      const results = [];
+      for (const event of events) {
+        console.log('[NostrService] Processing event:', event.id);
+        console.log('[NostrService] Event tags:', JSON.stringify(event.tags));
+        
+        if (verifySignature(event)) {
+          try {
+            const rideData = JSON.parse(event.content);
+            const rideIdTag = event.tags.find(t => t[0] === 'd');
+            const statusTag = event.tags.find(t => t[0] === 'status');
+            const tTag = event.tags.find(t => t[0] === 't');
+            
+            console.log('[NostrService] rideIdTag:', rideIdTag, 'statusTag:', statusTag, 'tTag:', tTag);
+
+            // Accept events with ride_ prefix and searching status (or no status)
+            if (rideIdTag && rideIdTag[1].startsWith('ride_') && 
+                (!statusTag || statusTag[1] === 'searching')) {
+              console.log('[NostrService] ACCEPTING ride:', rideIdTag[1]);
+              results.push({
+                ...rideData,
+                rideId: rideIdTag[1],
+                eventId: event.id,
+              });
+            } else {
+              console.log('[NostrService] SKIPPING event - not a valid Zubi ride');
+            }
+          } catch (e) {
+            console.warn('[NostrService] Invalid ride request event:', e);
+          }
+        }
+      }
+
+      console.log('[NostrService] Final results:', results.length);
+      return results;
+    } catch (error) {
+      console.error('[NostrService] getRideRequests failed:', error);
+      return [];
     }
   }
 

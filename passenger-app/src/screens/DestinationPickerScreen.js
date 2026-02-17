@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,20 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
+import OSMMapWeb from '../../../shared/components/OSMMapWeb';
 import LocationService from '../../../shared/services/LocationService';
+
+const { width, height } = Dimensions.get('window');
 
 /**
  * DestinationPickerScreen - Seleção de origem e destino com busca de endereços
  * Implementa busca de corridas reais com origem e destino
  */
 export default function DestinationPickerScreen({ navigation }) {
+  const mapRef = useRef(null);
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [originText, setOriginText] = useState('');
@@ -47,11 +52,12 @@ export default function DestinationPickerScreen({ navigation }) {
     try {
       const location = await LocationService.getCurrentLocation();
       if (location.success) {
-        setOrigin({
+        const newOrigin = {
           latitude: location.location.latitude,
           longitude: location.location.longitude,
           address: 'Localização atual',
-        });
+        };
+        setOrigin(newOrigin);
         setOriginText('Localização atual');
       } else {
         Alert.alert('Erro', 'Não foi possível obter sua localização');
@@ -262,6 +268,19 @@ export default function DestinationPickerScreen({ navigation }) {
         </View>
       </View>
 
+      {/* OpenStreetMap via WebView */}
+      <View style={styles.mapContainer}>
+        <OSMMapWeb
+          ref={mapRef}
+          origin={origin}
+          destination={destination}
+          onDestinationChange={(loc) => {
+            setDestination(loc);
+            setDestinationText(loc.address);
+          }}
+        />
+      </View>
+
       {origin && destination && !searchMode && (
         <View style={styles.estimateContainer}>
           <Text style={styles.estimateTitle}>Estimativa</Text>
@@ -415,5 +434,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,14 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useDriver } from '../services/DriverService';
 import NostrService from '../../../shared/services/NostrService';
+import OSMMapWeb from '../../../shared/components/OSMMapWeb';
+
+const { width } = Dimensions.get('window');
 
 /**
  * OnlineScreen - Nova versão: Motorista vê corridas disponíveis e se candidata
@@ -35,7 +39,39 @@ export default function OnlineScreen({ navigation }) {
   useEffect(() => {
     setupOnline();
     
+    // Auto-refresh rides every 10 seconds (same as handleRefresh but without refreshing state)
+    const refreshInterval = setInterval(async () => {
+      console.log('[OnlineScreen] Auto-refresh tick...');
+      
+      // Get fresh location from driver service
+      const driverLoc = await Location.getCurrentPositionAsync({});
+      const loc = driverLoc.coords;
+      
+      console.log('[OnlineScreen] Auto-refresh location:', loc.latitude, loc.longitude);
+      
+      try {
+        const rides = await NostrService.getRideRequests();
+        console.log('[OnlineScreen] Auto-refresh found:', rides.length);
+        
+        const processedRides = rides.map(ride => {
+          const distance = calculateDistance(
+            loc.latitude,
+            loc.longitude,
+            ride.origin.latitude,
+            ride.origin.longitude
+          );
+          return { ...ride, distance };
+        }).filter(ride => ride.distance <= 50);
+        
+        console.log('[OnlineScreen] Auto-refresh processed:', processedRides.length);
+        setRideRequests(processedRides);
+      } catch (error) {
+        console.error('[OnlineScreen] Auto-refresh error:', error);
+      }
+    }, 10000);
+    
     return () => {
+      clearInterval(refreshInterval);
       // Cleanup subscriptions
       NostrService.unsubscribe('ride-requests');
       NostrService.unsubscribe(`acceptance-${driverProfile?.id}`);
@@ -188,6 +224,8 @@ export default function OnlineScreen({ navigation }) {
                 estimatedArrival,
               });
 
+              console.log('[OnlineScreen] Candidacy result:', result);
+              
               if (result.success) {
                 setCandidacies(prev => new Set([...prev, rideRequest.rideId]));
                 Alert.alert(
@@ -226,11 +264,35 @@ export default function OnlineScreen({ navigation }) {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // TODO: Re-fetch ride requests
+    setRideRequests([]); // Limpa para evitar duplicatas
+    try {
+      console.log('[OnlineScreen] Refreshing ride requests...');
+      const rides = await NostrService.getRideRequests();
+      console.log('[OnlineScreen] Found rides:', rides.length);
+      console.log('[OnlineScreen] Rides data:', JSON.stringify(rides.map(r => ({ rideId: r.rideId, origin: r.origin }))));
+      
+      const processedRides = rides.map(ride => {
+        const distance = calculateDistance(
+          location.latitude,
+          location.longitude,
+          ride.origin.latitude,
+          ride.origin.longitude
+        );
+        console.log('[OnlineScreen] Ride:', ride.rideId, 'distance:', distance);
+        return { ...ride, distance };
+      }).filter(ride => ride.distance <= 50);
+      
+      console.log('[OnlineScreen] Processed rides:', processedRides.length);
+      setRideRequests(processedRides);
+      console.log('[OnlineScreen] State updated, rideRequests length:', processedRides.length);
+    } catch (error) {
+      console.error('[OnlineScreen] Error refreshing rides:', error);
+    }
     setRefreshing(false);
   };
 
-  const renderRideRequest = ({ item }) => (
+  const renderRideRequest = ({ item }) => {
+    return (
     <TouchableOpacity
       style={[
         styles.requestCard,
@@ -238,6 +300,14 @@ export default function OnlineScreen({ navigation }) {
       ]}
       onPress={() => handleCandidateForRide(item)}
     >
+      {/* Mini Map showing route with OpenStreetMap */}
+      <View style={styles.miniMapContainer}>
+        <OSMMapWeb
+          origin={item.origin}
+          destination={item.destination}
+        />
+      </View>
+
       <View style={styles.requestHeader}>
         <View>
           <Text style={styles.passengerName}>{item.passengerName}</Text>
@@ -284,6 +354,7 @@ export default function OnlineScreen({ navigation }) {
       )}
     </TouchableOpacity>
   );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -301,15 +372,9 @@ export default function OnlineScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Driver Info */}
-      <View style={styles.driverInfo}>
-        <Text style={styles.driverName}>{driverProfile?.name}</Text>
-        <Text style={styles.driverLevel}>
-          {driverProfile?.level} • Taxa: {
-            driverProfile?.level === 'Veterano' ? '5%' :
-            driverProfile?.level === 'Intermediário' ? '10%' : '15%'
-          }
-        </Text>
+      {/* Location Info */}
+      <View style={styles.locationContainer}>
+        <Text style={styles.locationLabel}>Sua localização:</Text>
         <Text style={styles.locationText}>
           📍 {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 'Obtendo localização...'}
         </Text>
@@ -330,7 +395,7 @@ export default function OnlineScreen({ navigation }) {
               Nenhuma corrida disponível no momento
             </Text>
             <Text style={styles.emptySubtext}>
-              Aguardando solicitações via rede P2P Nostr
+              Buscando automaticamente...
             </Text>
           </View>
         ) : (
@@ -422,6 +487,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+  },
+  refreshButton: {
+    backgroundColor: '#2196F3',
+    padding: 12,
+    margin: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   requestsList: {
     padding: 16,
@@ -556,5 +633,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  miniMapContainer: {
+    height: 120,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  miniMap: {
+    ...StyleSheet.absoluteFillObject,
   },
 });
